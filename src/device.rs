@@ -100,7 +100,7 @@ impl IndexData {
 
     }
 
-    fn set_variable(&mut self, var: &str, value: &str) -> Result<(), Box<dyn Error>> {
+    fn set_field(&mut self, var: &str, value: &str) -> Result<(), Box<dyn Error>> {
         match var {
             "gponUp" => Ok(self.gpon_status = value.to_string()),
             "opticalPower" => Ok(self.optical_power = value.to_string()),
@@ -119,7 +119,7 @@ impl IndexData {
         let mut index_data = IndexData::default();
 
         for (key, value) in hashmap {
-            index_data.set_variable(&key, &value).unwrap();
+            index_data.set_field(&key, &value).unwrap();
         }
 
         index_data

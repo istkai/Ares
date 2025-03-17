@@ -2,21 +2,56 @@ use std::{collections::HashMap};
 use std::error::Error;
 use reqwest::header;
 use regex::Regex;
-use crate::device::{IndexData, Device};
+use crate::{crypt, device::{IndexData, Device}};
+use crate::crypt::bitwise_xor_encryption;
 
 impl Device {
+    fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+        todo!()
+    }
+
+    fn handle_login_input_askey_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+        todo!()
+    }
+
     /// XOR each character with 0x1F for encryption purposes (`REQUIRED FOR LOGIN`)
-    fn handle_login_input(&self, login_username: &str) -> (String, String) {
-        let login_username = login_username.chars()
-            .map(|char| ((char as u8) ^ 0x1F) as char)
-            .collect();
+    fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+        let login_username = String::from(crypt::md5(login_username.as_ref()));
 
-        let login_password = self.admin_password.chars()
-            .map(|char| ((char as u8) ^ 0x1F) as char)
-            .collect();
+        let login_password = String::from(crypt::md5(self.admin_password.as_ref()));
 
-        (login_username, login_password)
-        
+        Ok(
+            (login_username, login_password)
+        )
+    }
+
+    fn handle_login_input_askey_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+        let login_username = bitwise_xor_encryption(String::from(login_username))?;
+
+        let login_password = self.admin_password.clone();
+
+        let login_password = bitwise_xor_encryption(login_password.clone())?;
+
+        Ok(
+            (login_username, login_password)
+        )
+    }
+
+    fn handle_login_input(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+        match self.model {
+            String::from("Mitra-LC") => {
+                self.handle_login_input_mitra_lc(login_username)
+            },
+            String::from("Askey-LC") => {
+                self.handle_login_input_askey_lc(login_username)
+            }
+            String::from("Mitra-Econet") => {
+                self.handle_login_input_mitra_econet(login_username)
+            },
+            String::from("Askey-Econet") => {
+                self.handle_login_input_askey_econet(login_username)
+            }
+        }
     }
 
     fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> HashMap<&'a str, String> {
@@ -59,14 +94,14 @@ impl Device {
             .await?;
 
         // POST login form to log in and fetch index page
-        let login_data = self.handle_login_input("admin");
+        let login_data = self.handle_login_input("admin")?;
         let login_form = self.generate_login_form(login_data);
         let index_login_post_uri = "/cgi-bin/te_acceso_router.cgi";
         let index_login_post_url = format!("http://{}{}", self.ip_addr, index_login_post_uri);
 
         let index_login_post_response = self.client
             .post(&index_login_post_url)
-            .header(header::USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+            .header(header::USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0")
             .header(header::REFERER, &index_login_post_url)
             .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
             .form(&login_form)

@@ -5,15 +5,15 @@ use std::fs::File;
 use crate::device::Device;
 
 #[derive(Debug)]
-pub struct Log<'a> {
-    device: &'a Device,
+pub struct Log {
+    device: Device,
     rsx_log: File,
     xmd_log: File,
     log_data: HashMap<&'static str, String>
 }
 
-impl Log<'_> {
-    pub fn from_device(device: &Device) -> Result<Log, Box<dyn Error>> {
+impl Log {
+    pub fn from_device(device: Device) -> Result<Log, Box<dyn Error>> {
         let logging_folder = format!("./log/{}", device.serial_number);
 
         let rsx_log_path = format!("./log/{}/{}_rsx.log", device.serial_number, device.serial_number);

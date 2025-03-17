@@ -8,20 +8,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let device = Device::new(
         "192.168.15.1",
-        "78E9CF070231",
-        "78E9CF070231",
-        "j69qjm4z",
-        "RTF8115VW",
-        "TLCM00BA1D59",
-        "BR_SV_g13.12_RTF_TEF001_V8.30_V020"
+        "C03DD93B97E0",
+        "C03DD93B97E0",
+        "d1f87fa2",
+        "Mitra-Econet",
+        "MSTC393A9372",
+        "BR_g8.7_1.11(WVK.0)b45"
     );
-    
-    let mut log = Log::from_device(&device)?;
 
-    dbg!(device.login_to_index()
+    dbg!(device.clone().login_to_index()
         .await?
         .fetch_index_data()
         .await?);
-    
+
+    let mut log = Log::from_device(device)?;
+
     Ok(())
 }

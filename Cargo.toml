@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 tokio = { version = "1.44.1", features = ["full"] }
-ipnet = "2.11.0"
 reqwest = { version = "0.12.14", features = ["cookies", "json"] }
-mac_address = "1.1.8"
 regex = "1.11.1"
+scraper = "0.23.1"

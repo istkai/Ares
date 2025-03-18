@@ -1,9 +1,9 @@
 use std::{collections::HashMap};
 use std::error::Error;
-use std::ops::Index;
 use reqwest::{header, Client};
 use regex::Regex;
-use crate::{crypt, device::{IndexData, Device}};
+use scraper::{Html, Selector};
+use crate::{crypt::{bitwise_xor, generate_md5_hash}, device::{IndexData, Device, MetaData}};
 
 impl Device<'_> {
     fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
@@ -16,9 +16,9 @@ impl Device<'_> {
 
     /// XOR each character with 0x1F for encryption purposes (`REQUIRED FOR LOGIN`)
     fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
-        let login_username = crypt::generate_md5_hash(login_username.as_bytes());
+        let login_username = generate_md5_hash(login_username.as_bytes());
 
-        let login_password = crypt::generate_md5_hash(self.admin_password.as_ref());
+        let login_password = generate_md5_hash(self.admin_password.as_ref());
 
         Ok(
             (login_username, login_password)
@@ -26,9 +26,9 @@ impl Device<'_> {
     }
 
     fn handle_login_input_askey_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
-        let login_username = crypt::bitwise_xor(login_username)?;
+        let login_username = bitwise_xor(login_username)?;
 
-        let login_password = crypt::bitwise_xor(self.admin_password)?;
+        let login_password = bitwise_xor(self.admin_password)?;
 
         Ok(
             (login_username, login_password)
@@ -66,16 +66,49 @@ impl Device<'_> {
         
     }
 
-    fn collect_variables_from_response(&self, response: &str) -> HashMap<String, String> {
+    fn collect_variables_from_response(&self, uri: &str, response: &str) -> HashMap<String, String> {
         let mut vars = HashMap::new();
-        let fetch_pattern = Regex::new(
-            r#"var\s+(gponUp|opticalPower|pppStatus|pppIpv4Gateway|enetStatus|wlEnbl_main0|wlSsid_main0|wlEnbl_main1|wlSsid_main1)\s*=\s*['"]?([^"']+)['"]?;"#)
-            .unwrap();
+        
+        match uri {
+            "/index_cliente.asp" => {
+                let fetch_pattern = Regex::new(
+                    r#"var\s+(gponUp|opticalPower|pppStatus|pppIpv4Gateway|enetStatus|wlEnbl_main0|wlSsid_main0|wlEnbl_main1|wlSsid_main1)\s*=\s*['"]?([^"']+)['"]?;"#)
+                    .unwrap();
 
-        for capture in fetch_pattern.captures_iter(response) {
-            let key = capture[1].to_string();
-            let value = capture[2].to_string();
-            vars.insert(key, value);
+                for capture in fetch_pattern.captures_iter(response) {
+                    let key = capture[1].to_string();
+                    let value = capture[2].to_string();
+                    vars.insert(key, value);
+                }
+            }
+            "/about-power-box.asp" => {
+                    let document = Html::parse_fragment(response);
+                    let td_selector = Selector::parse("td").unwrap();
+                
+                    let mut key = None;
+
+                    for element in document.select(&td_selector) {
+                        let text = element
+                            .text()
+                            .collect::<Vec<_>>().join("")
+                            .trim()
+                            .to_string();
+
+                        if key.is_none() && text.ends_with(':') {
+                            key = Some(text.trim_end_matches(':').to_string());
+                        } else if let Some(k) = key.take() {
+                            let value = if k == "Endereço MAC da WAN" {
+                                text.replace(":", "") // Remove colons from MAC address
+                            } else {
+                                text
+                            };
+                            vars.insert(k, value);
+                        }
+                    }
+                }
+            _ => {
+                unreachable!()
+            }
         }
         
         vars
@@ -117,6 +150,7 @@ impl Device<'_> {
         let index_data_get_uri = "/index_cliente.asp";
         let index_data_get_url = format!("http://{}{}", self.ip_addr, index_data_get_uri);
         let index_data_get_response = self.collect_variables_from_response(
+            index_data_get_uri,
             client
                 .get(&index_data_get_url)
                 .send()
@@ -129,6 +163,26 @@ impl Device<'_> {
         let index_data = IndexData::from_hashmap(index_data_get_response);
         
         Ok(index_data)
+        
+    }
+    
+    pub async fn fetch_meta_data(&self, client: &Client) -> Result<(MetaData), Box<dyn Error>> {
+        let meta_data_get_uri = "/about-power-box.asp";
+        let meta_data_get_url = format!("http://{}{}", self.ip_addr, meta_data_get_uri);
+        let meta_data_get_response = self.collect_variables_from_response(
+            meta_data_get_uri,
+            client
+                .get(&meta_data_get_url)
+                .send()
+                .await?
+                .text()
+                .await?
+                .as_str()
+        );
+        
+        let meta_data = MetaData::from_hashmap(meta_data_get_response);
+        
+        Ok(meta_data)
         
     }
 }

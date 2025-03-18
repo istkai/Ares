@@ -15,8 +15,8 @@ impl Log {
     pub fn from_device(device: &Device, index_data: &IndexData, meta_data: &MetaData) -> Result<Log, Box<dyn Error>> {
         let logging_folder = format!("./log/{}", device.serial_number);
 
-        let rsx_log_path = format!("./log/{}/{}_rsx.log", device.serial_number, device.serial_number);
-        let xmd_log_path = format!("./log/{}/{}_xmd_log", device.serial_number, device.serial_number);
+        let rsx_log_path = format!("./log/{}/log/{}_rsx.log", device.serial_number, device.serial_number);
+        let xmd_log_path = format!("./log/{}/log/{}_xmd_log", device.serial_number, device.serial_number);
 
         fs::create_dir_all(&logging_folder)?;
 

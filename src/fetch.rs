@@ -2,11 +2,23 @@ use std::{collections::HashMap};
 use std::error::Error;
 use reqwest::{header, Client};
 use regex::Regex;
-use serde_json::json;
-use jstime_core as jstime;
 use md5;
 use scraper::{Html, Selector};
 use crate::{crypt::{bitwise_xor}, device::{IndexData, Device, MetaData}};
+
+pub struct Form<'a> {
+    form: HashMap<&'a str, String>,
+    target_uri: &'a str
+}
+
+impl<'a> Form<'a> {
+    pub fn new(form: HashMap<&'a str, String>, target_uri: &'a str) -> Self {
+        Form {
+            form,
+            target_uri
+        }
+    }
+}
 
 impl Device<'_> {
     fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
@@ -14,7 +26,9 @@ impl Device<'_> {
     }
 
     fn handle_login_input_askey_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
-        todo!()
+        Ok(
+            (login_username.to_string(), self.admin_password.to_string())
+        )
     }
 
     fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
@@ -57,15 +71,19 @@ impl Device<'_> {
         }
     }
 
-    fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> HashMap<&'a str, String> {
+    fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> Form {
         let mut login_form = HashMap::new();
+        let target_uri;
 
         match self.model {
             "Mitra-LC" => {
                 todo!()
             },
             "Askey-LC" => {
-                todo!()
+                login_form.insert("loginUsername", login_username);
+                login_form.insert("loginPassword", login_password);
+                login_form.insert("curWebPage", "/login.html".to_string());
+                target_uri = "/login.cgi";
             },
             "Mitra-Econet" => {
                 todo!()
@@ -74,13 +92,14 @@ impl Device<'_> {
                 login_form.insert("loginUsername", login_username);
                 login_form.insert("loginPassword", login_password);
                 login_form.insert("curWebPage", "/index_cliente.asp".to_string());
+                target_uri = "/cgi-bin/te_acceso_router.cgi";
             },
             _ => {
                 unreachable!()
             }
         }
 
-        login_form
+        Form::new(login_form, target_uri)
         
     }
 
@@ -133,8 +152,30 @@ impl Device<'_> {
         
     }
 
-    pub async fn login_to_index(self, client: &Client) -> Result<Self, Box<dyn Error>> {
-        let index_login_get_uri = "/login.asp";
+    pub async fn login_to_index<'a>(self, client: &Client) -> Result<Self, Box<dyn Error>> {
+        let login_form = self
+            .generate_login_form(
+                self
+                    .handle_login_input("admin")?);
+        
+        let index_login_get_uri: &str = match self.model {
+            "Mitra-LC" => {
+                todo!()
+            },
+            "Askey-LC" => {
+                ""
+            },
+            "Mitra-Econet" => {
+                todo!()
+            },
+            "Askey-Econet" => {
+                "/login.asp"
+            },
+            _ => {
+                unreachable!()
+            }
+        };
+        
         let index_login_get_url = format!("http://{}{}", self.ip_addr, index_login_get_uri);
 
         // GET index login page to capture cookies
@@ -144,19 +185,18 @@ impl Device<'_> {
             .header(header::REFERER, &index_login_get_url)
             .send()
             .await?;
-
-        // POST login form to log in and fetch index page
+        
+        let index_login_post_url = format!("http://{}{}", self.ip_addr, login_form.target_uri);
+        
         let login_data = self.handle_login_input("admin")?;
         let login_form = self.generate_login_form(login_data);
-        let index_login_post_uri = "/cgi-bin/te_acceso_router.cgi";
-        let index_login_post_url = format!("http://{}{}", self.ip_addr, index_login_post_uri);
 
         let index_login_post_response = client
             .post(&index_login_post_url)
             .header(header::USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0")
             .header(header::REFERER, &index_login_post_url)
             .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .form(&login_form)
+            .form(&login_form.form)
             .send()
             .await?;
 

@@ -2,8 +2,11 @@ use std::{collections::HashMap};
 use std::error::Error;
 use reqwest::{header, Client};
 use regex::Regex;
+use serde_json::json;
+use jstime_core as jstime;
+use md5;
 use scraper::{Html, Selector};
-use crate::{crypt::{bitwise_xor, generate_md5_hash}, device::{IndexData, Device, MetaData}};
+use crate::{crypt::{bitwise_xor}, device::{IndexData, Device, MetaData}};
 
 impl Device<'_> {
     fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
@@ -14,11 +17,10 @@ impl Device<'_> {
         todo!()
     }
 
-    /// XOR each character with 0x1F for encryption purposes (`REQUIRED FOR LOGIN`)
     fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
-        let login_username = generate_md5_hash(login_username.as_bytes());
+        let login_username = login_username.to_string();
 
-        let login_password = generate_md5_hash(self.admin_password.as_ref());
+        let login_password = format!("{:?}", md5::compute(self.admin_password.as_bytes()));
 
         Ok(
             (login_username, login_password)
@@ -58,9 +60,25 @@ impl Device<'_> {
     fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> HashMap<&'a str, String> {
         let mut login_form = HashMap::new();
 
-            login_form.insert("loginUsername", login_username);
-            login_form.insert("loginPassword", login_password);
-            login_form.insert("curWebPage", "/index_cliente.asp".to_string());
+        match self.model {
+            "Mitra-LC" => {
+                todo!()
+            },
+            "Askey-LC" => {
+                todo!()
+            },
+            "Mitra-Econet" => {
+                todo!()
+            },
+            "Askey-Econet" => {
+                login_form.insert("loginUsername", login_username);
+                login_form.insert("loginPassword", login_password);
+                login_form.insert("curWebPage", "/index_cliente.asp".to_string());
+            },
+            _ => {
+                unreachable!()
+            }
+        }
 
         login_form
         
@@ -141,6 +159,8 @@ impl Device<'_> {
             .form(&login_form)
             .send()
             .await?;
+
+        dbg!(index_login_post_response.text().await?);
 
         Ok(self)
         

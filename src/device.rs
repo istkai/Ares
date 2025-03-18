@@ -3,41 +3,31 @@ use std::error::Error;
 use std::{fs, fs::File};
 use reqwest::{Client, ClientBuilder};
 
-#[derive(Debug, Clone)]
-pub struct Device {
-    pub ip_addr: String,
-    pub mac_addr: String,
-    pub serial_number: String,
-    pub admin_password: String,
-    pub model: String,
-    pub gpon_sn: String,
-    pub firmware_version: String,
-    pub client: Client,
-    pub index_data: IndexData,
+#[derive(Copy, Debug, Clone)]
+pub struct Device<'a> {
+    pub ip_addr: &'a str,
+    pub mac_addr: &'a str,
+    pub serial_number: &'a str,
+    pub admin_password: &'a str,
+    pub model: &'a str,
+    pub gpon_sn: &'a str,
+    pub firmware_version: &'a str,
 }
 
-impl Device {
+impl<'a> Device<'a> {
 
     pub fn new(
-        ip_addr: &str,
-        mac_addr: &str,
-        serial_number: &str,
-        admin_password: &str,
-        model: &str,
-        gpon_sn: &str,
-        firmware_version: &str) -> Self {
+        ip_addr: &'a str,
+        mac_addr: &'a str,
+        serial_number: &'a str,
+        admin_password: &'a str,
+        model: &'a str,
+        gpon_sn: &'a str,
+        firmware_version: &'a str) -> (Self, Client) {
 
-        let ip_addr = ip_addr.to_string();
-        let mac_addr = mac_addr.to_string();
-        let serial_number = serial_number.to_string();
-        let admin_password = admin_password.to_string();
-        let model = model.to_string();
-        let gpon_sn = gpon_sn.to_string();
-        let firmware_version = firmware_version.to_string();
         let client = Self::connect();
-        let index_data = IndexData::default();
 
-        Device {
+        (Device {
             ip_addr,
             mac_addr,
             serial_number,
@@ -45,9 +35,9 @@ impl Device {
             model,
             gpon_sn,
             firmware_version,
+        },
             client,
-            index_data,
-        }
+        )
 
     }
 

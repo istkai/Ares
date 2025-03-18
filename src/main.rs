@@ -6,7 +6,7 @@ use Reseaux::log::Log;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
 
-    let device = Device::new(
+    let (device, client) = Device::new(
         "192.168.15.1",
         "C03DD93B97E0",
         "C03DD93B97E0",
@@ -16,12 +16,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "BR_g8.7_1.11(WVK.0)b45"
     );
 
-    dbg!(device.clone().login_to_index()
+    let index_data = device.login_to_index(&client)
         .await?
-        .fetch_index_data()
-        .await?);
+        .fetch_index_data(&client)
+        .await?;
 
-    let mut log = Log::from_device(device)?;
+    let mut log = Log::from_device(&device, &index_data)?;
 
     Ok(())
 }

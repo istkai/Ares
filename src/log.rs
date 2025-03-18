@@ -2,18 +2,17 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
-use crate::device::Device;
+use crate::device::{Device, IndexData};
 
 #[derive(Debug)]
 pub struct Log {
-    device: Device,
     rsx_log: File,
     xmd_log: File,
-    log_data: HashMap<&'static str, String>
+    //log_data: HashMap<&'static str, String>
 }
 
 impl Log {
-    pub fn from_device(device: Device) -> Result<Log, Box<dyn Error>> {
+    pub fn from_device(device: &Device, index_data: &IndexData) -> Result<Log, Box<dyn Error>> {
         let logging_folder = format!("./log/{}", device.serial_number);
 
         let rsx_log_path = format!("./log/{}/{}_rsx.log", device.serial_number, device.serial_number);
@@ -30,10 +29,9 @@ impl Log {
 
         Ok(
             Log {
-                device,
                 rsx_log,
                 xmd_log,
-                log_data
+                //log_data
             }
         )
 

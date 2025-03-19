@@ -4,34 +4,26 @@ use reqwest::{header, Client};
 use regex::Regex;
 use md5;
 use scraper::{Html, Selector};
-use crate::{crypt::{bitwise_xor}, device::{IndexData, Device, MetaData}};
-
-pub struct Form<'a> {
-    form: HashMap<&'a str, String>,
-    target_uri: &'a str
-}
-
-impl<'a> Form<'a> {
-    pub fn new(form: HashMap<&'a str, String>, target_uri: &'a str) -> Self {
-        Form {
-            form,
-            target_uri
-        }
-    }
-}
+use crate::{
+    crypt::{bitwise_xor},
+    device::{IndexData, Device, MetaData},
+    error::{HandlingError},
+    form::{Form}
+};
+use crate::error::LoginError;
 
 impl Device<'_> {
-    fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+    fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), HandlingError> {
         todo!()
     }
 
-    fn handle_login_input_askey_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+    fn handle_login_input_askey_lc(&self, login_username: &str) -> Result<(String, String), HandlingError> {
         Ok(
             (login_username.to_string(), self.admin_password.to_string())
         )
     }
 
-    fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+    fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), HandlingError> {
         let login_username = login_username.to_string();
 
         let login_password = format!("{:?}", md5::compute(self.admin_password.as_bytes()));
@@ -41,17 +33,17 @@ impl Device<'_> {
         )
     }
 
-    fn handle_login_input_askey_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
-        let login_username = bitwise_xor(login_username)?;
+    fn handle_login_input_askey_econet(&self, login_username: &str) -> Result<(String, String), HandlingError> {
+        let login_username = bitwise_xor(login_username).unwrap_or_default();
 
-        let login_password = bitwise_xor(self.admin_password)?;
+        let login_password = bitwise_xor(self.admin_password).unwrap_or_default();
 
         Ok(
             (login_username, login_password)
         )
     }
 
-    fn handle_login_input(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
+    fn handle_login_input(&self, login_username: &str) -> Result<(String, String), HandlingError> {
         match self.model {
             "Mitra-LC" => {
                 self.handle_login_input_mitra_lc(login_username)
@@ -66,18 +58,18 @@ impl Device<'_> {
                 self.handle_login_input_askey_econet(login_username)
             }
             _ => {
-                Err(format!("Unknown device model: {}", self.model).into())
+                unreachable!()
             }
         }
     }
 
-    fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> Form {
+    fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> Option<Form> {
         let mut login_form = HashMap::new();
         let target_uri;
 
         match self.model {
             "Mitra-LC" => {
-                todo!()
+                return None
             },
             "Askey-LC" => {
                 login_form.insert("loginUsername", login_username);
@@ -86,7 +78,7 @@ impl Device<'_> {
                 target_uri = "/login.cgi";
             },
             "Mitra-Econet" => {
-                todo!()
+                return None
             },
             "Askey-Econet" => {
                 login_form.insert("loginUsername", login_username);
@@ -99,7 +91,7 @@ impl Device<'_> {
             }
         }
 
-        Form::new(login_form, target_uri)
+        Some(Form::new(login_form, target_uri))
         
     }
 
@@ -152,11 +144,11 @@ impl Device<'_> {
         
     }
 
-    pub async fn login_to_index<'a>(self, client: &Client) -> Result<Self, Box<dyn Error>> {
+    pub async fn login_to_index<'a>(self, client: &Client) -> Result<Self, LoginError> {
         let login_form = self
             .generate_login_form(
                 self
-                    .handle_login_input("admin")?);
+                    .handle_login_input("admin").unwrap_or_default()).unwrap_or_default();
         
         let index_login_get_uri: &str = match self.model {
             "Mitra-LC" => {
@@ -184,12 +176,13 @@ impl Device<'_> {
             .header(header::USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
             .header(header::REFERER, &index_login_get_url)
             .send()
-            .await?;
+            .await
+            .expect("Device did not respond.");
         
         let index_login_post_url = format!("http://{}{}", self.ip_addr, login_form.target_uri);
         
-        let login_data = self.handle_login_input("admin")?;
-        let login_form = self.generate_login_form(login_data);
+        let login_data = self.handle_login_input("admin").unwrap_or_default();
+        let login_form = self.generate_login_form(login_data).unwrap_or_default();
 
         let index_login_post_response = client
             .post(&index_login_post_url)
@@ -198,9 +191,10 @@ impl Device<'_> {
             .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
             .form(&login_form.form)
             .send()
-            .await?;
+            .await
+            .expect("Device did not respond.");
 
-        dbg!(index_login_post_response.text().await?);
+        dbg!(index_login_post_response.text().await.unwrap_or_default());
 
         Ok(self)
         

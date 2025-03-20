@@ -1,29 +1,27 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use std::error::Error;
 use reqwest::{header, Client};
 use regex::Regex;
 use md5;
 use scraper::{Html, Selector};
 use crate::{
-    crypt::{bitwise_xor},
+    crypt::bitwise_xor,
     device::{IndexData, Device, MetaData},
-    error::{HandlingError},
-    form::{Form}
+    form::Form
 };
-use crate::error::LoginError;
 
 impl Device<'_> {
-    fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), HandlingError> {
+    fn handle_login_input_mitra_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         todo!()
     }
 
-    fn handle_login_input_askey_lc(&self, login_username: &str) -> Result<(String, String), HandlingError> {
+    fn handle_login_input_askey_lc(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         Ok(
             (login_username.to_string(), self.admin_password.to_string())
         )
     }
 
-    fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), HandlingError> {
+    fn handle_login_input_mitra_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         let login_username = login_username.to_string();
 
         let login_password = format!("{:?}", md5::compute(self.admin_password.as_bytes()));
@@ -33,7 +31,7 @@ impl Device<'_> {
         )
     }
 
-    fn handle_login_input_askey_econet(&self, login_username: &str) -> Result<(String, String), HandlingError> {
+    fn handle_login_input_askey_econet(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         let login_username = bitwise_xor(login_username).unwrap_or_default();
 
         let login_password = bitwise_xor(self.admin_password).unwrap_or_default();
@@ -43,7 +41,7 @@ impl Device<'_> {
         )
     }
 
-    fn handle_login_input(&self, login_username: &str) -> Result<(String, String), HandlingError> {
+    fn handle_login_input(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         match self.model {
             "Mitra-LC" => {
                 self.handle_login_input_mitra_lc(login_username)
@@ -144,7 +142,7 @@ impl Device<'_> {
         
     }
 
-    pub async fn login_to_index<'a>(self, client: &Client) -> Result<Self, LoginError> {
+    pub async fn login_to_index<'a>(self, client: &Client) -> Result<Self, Box<dyn Error>> {
         let login_form = self
             .generate_login_form(
                 self

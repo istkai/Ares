@@ -4,13 +4,13 @@ use reqwest::{Client, ClientBuilder};
 
 #[derive(Copy, Debug, Clone)]
 pub struct Device<'a> {
-    pub ip_addr: &'a str,
-    pub mac_address: &'a str,
-    pub serial_number: &'a str,
-    pub admin_password: &'a str,
-    pub model: &'a str,
-    pub gpon_sn: &'a str,
-    pub firmware_version: &'a str,
+    pub (crate) ip_addr: &'a str,
+    mac_address: &'a str,
+    pub (crate) serial_number: &'a str,
+    pub (crate) admin_password: &'a str,
+    pub (crate) model: &'a str,
+    gpon_sn: &'a str,
+    firmware_version: &'a str,
 }
 
 impl<'a> Device<'a> {
@@ -141,6 +141,7 @@ impl Default for IndexData {
             ethernet_status: String::new()
         }
     }
+
 }
 
 #[derive(Debug)]

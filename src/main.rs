@@ -1,6 +1,6 @@
-use std::{error::Error};
-use Reseaux::device::Device;
-use Reseaux::log::Log;
+use std::error::Error;
+use reseaux::device::Device;
+use reseaux::log::Log;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

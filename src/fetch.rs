@@ -2,12 +2,14 @@ use std::collections::HashMap;
 use std::error::Error;
 use reqwest::{header, Client};
 use regex::Regex;
-use md5;
+use ron::ser::PrettyConfig;
 use scraper::{Html, Selector};
+use serde_json::json;
 use crate::{
     crypt::bitwise_xor,
-    device::{IndexData, Device, MetaData},
-    form::Form
+    device::{Model, Device, IndexData, MetaData},
+    form::Form,
+    log::Log
 };
 
 impl Device<'_> {
@@ -43,16 +45,16 @@ impl Device<'_> {
 
     fn handle_login_input(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         match self.model {
-            "Mitra-LC" => {
+            Model::MitraLC => {
                 self.handle_login_input_mitra_lc(login_username)
             },
-            "Askey-LC" => {
+            Model::AskeyLC => {
                 self.handle_login_input_askey_lc(login_username)
             }
-            "Mitra-Econet" => {
+            Model::MitraEconet => {
                 self.handle_login_input_mitra_econet(login_username)
             },
-            "Askey-Econet" => {
+            Model::AskeyEconet => {
                 self.handle_login_input_askey_econet(login_username)
             }
             _ => {
@@ -61,24 +63,24 @@ impl Device<'_> {
         }
     }
 
-    fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> Option<Form> {
+    fn generate_login_form<'a>(&self, (login_username, login_password): (String, String)) -> Result<Form, Box<dyn Error>> {
         let mut login_form = HashMap::new();
         let target_uri;
 
         match self.model {
-            "Mitra-LC" => {
-                return None
+            Model::MitraLC => {
+                todo!()
             },
-            "Askey-LC" => {
+            Model::AskeyLC => {
                 login_form.insert("loginUsername", login_username);
                 login_form.insert("loginPassword", login_password);
                 login_form.insert("curWebPage", "/login.html".to_string());
                 target_uri = "/login.cgi";
             },
-            "Mitra-Econet" => {
-                return None
+            Model::MitraEconet => {
+                todo!()
             },
-            "Askey-Econet" => {
+            Model::AskeyEconet => {
                 login_form.insert("loginUsername", login_username);
                 login_form.insert("loginPassword", login_password);
                 login_form.insert("curWebPage", "/index_cliente.asp".to_string());
@@ -89,27 +91,28 @@ impl Device<'_> {
             }
         }
 
-        Some(Form::new(login_form, target_uri))
+        Ok(
+            Form::new(login_form, target_uri)
+        )
         
     }
 
-    fn collect_variables_from_response(&self, uri: &str, response: &str) -> HashMap<String, String> {
+    fn collect_variables_from_response(&self, uri: &str, response: String) -> Result<HashMap<String, String>, Box<dyn Error>> {
         let mut vars = HashMap::new();
         
         match uri {
             "/index_cliente.asp" => {
                 let fetch_pattern = Regex::new(
-                    r#"var\s+(gponUp|opticalPower|pppStatus|pppIpv4Gateway|enetStatus|wlEnbl_main0|wlSsid_main0|wlEnbl_main1|wlSsid_main1)\s*=\s*['"]?([^"']+)['"]?;"#)
-                    .unwrap();
+                    r#"var\s+(gponUp|opticalPower|pppStatus|pppIpv4Gateway|enetStatus|wlEnbl_main0|wlSsid_main0|wlEnbl_main1|wlSsid_main1)\s*=\s*['"]?([^"']+)['"]?;"#)?;
 
-                for capture in fetch_pattern.captures_iter(response) {
+                for capture in fetch_pattern.captures_iter(&*response) {
                     let key = capture[1].to_string();
                     let value = capture[2].to_string();
                     vars.insert(key, value);
                 }
             }
             "/about-power-box.asp" => {
-                    let document = Html::parse_fragment(response);
+                    let document = Html::parse_fragment(&*response);
                     let td_selector = Selector::parse("td").unwrap();
                 
                     let mut key = None;
@@ -138,7 +141,7 @@ impl Device<'_> {
             }
         }
         
-        vars
+        Ok(vars)
         
     }
 
@@ -149,16 +152,16 @@ impl Device<'_> {
                     .handle_login_input("admin").unwrap_or_default()).unwrap_or_default();
         
         let index_login_get_uri: &str = match self.model {
-            "Mitra-LC" => {
+            Model::MitraLC => {
                 todo!()
             },
-            "Askey-LC" => {
+            Model::AskeyLC => {
                 ""
             },
-            "Mitra-Econet" => {
+            Model::MitraEconet => {
                 todo!()
             },
-            "Askey-Econet" => {
+            Model::AskeyEconet => {
                 "/login.asp"
             },
             _ => {
@@ -192,49 +195,86 @@ impl Device<'_> {
             .await
             .expect("Device did not respond.");
 
-        dbg!(index_login_post_response.text().await.unwrap_or_default());
-
         Ok(self)
         
     }
 
-    pub async fn fetch_index_data(&self, client: &Client) -> Result<IndexData, Box<dyn Error>> {
+    pub async fn fetch_index_data(mut self, client: &Client) -> Result<Self, Box<dyn Error>> {
         let index_data_get_uri = "/index_cliente.asp";
         let index_data_get_url = format!("http://{}{}", self.ip_addr, index_data_get_uri);
-        let index_data_get_response = self.collect_variables_from_response(
-            index_data_get_uri,
-            client
+        let index_data_get_response = client
                 .get(&index_data_get_url)
                 .send()
-                .await?
-                .text()
-                .await?
-                .as_str()
-        );
+                .await?;
         
-        let index_data = IndexData::from_hashmap(index_data_get_response);
+        if !index_data_get_response.status().is_success() {
+            self.log("IndexData", String::from("Fetch error. Response was not successful"))?;
+        } else {
+            self.index_data = IndexData::from_hashmap(
+                self.collect_variables_from_response(
+                    index_data_get_uri,
+                    index_data_get_response
+                        .text()
+                        .await?
+                )?
+            );
+            
+            let index_log = json!(
+[
+    {
+        "gpon_status":"1",
+        "optical_power":"TX:2.660000 dBm;RX:-15.990000 dBm;LT:-40.000000 dBm;LR:-40.000000 dBm",
+        "ppp_status":"1",
+        "ppp_ipv4_gateway":"200.204.204.146",
+        "wl_is_enabled_main_0":"1",
+        "wl_ssid_main_0":"VIVOFIBRA-0231",
+        "wl_is_enabled_main_1":"1",
+        "wl_ssid_main_1":"Benevidio",
+        "ethernet_status":""
+    },
+    {
+        "mac_address":"78E9CF070231",
+        "serial_number":"78E9CF070231",
+        "model":"RTF8115VW",
+        "gpon_sn":"TLCM00BA1D59",
+        "firmware_version":"BR_SV_g13.12_RTF_TEF001_V8.30_V020"
+    }
+]
+            );
+            
+            self.log("IndexData", serde_json::to_string(&index_log)?)?;
+        }
         
-        Ok(index_data)
+        Ok(self)
         
     }
     
-    pub async fn fetch_meta_data(&self, client: &Client) -> Result<(MetaData), Box<dyn Error>> {
+    pub async fn fetch_meta_data(mut self, client: &Client) -> Result<Self, Box<dyn Error>> {
         let meta_data_get_uri = "/about-power-box.asp";
         let meta_data_get_url = format!("http://{}{}", self.ip_addr, meta_data_get_uri);
-        let meta_data_get_response = self.collect_variables_from_response(
-            meta_data_get_uri,
-            client
+        let meta_data_get_response = client
                 .get(&meta_data_get_url)
                 .send()
-                .await?
-                .text()
-                .await?
-                .as_str()
-        );
+                .await?;
+
+        if !meta_data_get_response.status().is_success() {
+            self.log("MetaData", String::from("Fetch error. Response was not successful"))?;
+        } else {
+            self.meta_data = MetaData::from_hashmap(
+                self.collect_variables_from_response(
+                    meta_data_get_uri,
+                    meta_data_get_response
+                        .text()
+                        .await?
+                )?
+            );
+
+            dbg!(&self.meta_data);
+            
+            self.log("MetaData", serde_json::to_string(&self.meta_data)?)?;
+        }
         
-        let meta_data = MetaData::from_hashmap(meta_data_get_response);
-        
-        Ok(meta_data)
+        Ok(self)
         
     }
 }

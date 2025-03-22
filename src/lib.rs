@@ -1,5 +1,6 @@
-pub mod fetch;
 pub mod device;
+pub mod fetch;
 pub mod log;
-pub mod crypt;
-pub mod form;
+mod crypt;
+mod form;
+mod error;

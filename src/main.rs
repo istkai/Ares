@@ -1,6 +1,6 @@
 use std::error::Error;
-use reseaux::device::Device;
-use reseaux::log::Log;
+use std::time;
+use reseaux::{device::{Device, Model}};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -15,12 +15,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_g8.7_1.11(WVK.0)b45"
     // );
     
-    let (device_askey_econet, client_askey_econet) = Device::new(
+    let (mut device_askey_econet, client_askey_econet) = Device::new(
         "192.168.15.1",
         "78E9CF070231",
         "78E9CF070231",
         "j69qjm4z",
-        "Askey-Econet",
+        Model::AskeyEconet,
         "TLCM00BA1D59",
         "BR_SV_g13.12_RTF_TEF001_V8.30_V020"
     );
@@ -35,16 +35,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_SV_g000_R3505VWN1001_s42"
     // );
 
-    let index_data_askey_econet = device_askey_econet.login_to_index(&client_askey_econet)
+    device_askey_econet = device_askey_econet
+        .login_to_index(&client_askey_econet)
         .await?
         .fetch_index_data(&client_askey_econet)
+        .await?
+        .fetch_meta_data(&client_askey_econet)
         .await?;
+
+    tokio::time::sleep(time::Duration::from_secs(5)).await;
+
+    dbg!(&device_askey_econet);
     
-    let meta_data_askey_econet = device_askey_econet.fetch_meta_data(&client_askey_econet).await?;
+    let log_device_askey_econet = &device_askey_econet.log.write()?;
+
+
+    // let meta_data_askey_econet = device_askey_econet
+    //     .fetch_meta_data(&client_askey_econet)
+    //     .await?;
     
-    println!("{:?}\n{:?}\n{:?}", device_askey_econet, index_data_askey_econet, meta_data_askey_econet);
-    
-    let log_device_askey_econet = Log::from_device(&device_askey_econet, &index_data_askey_econet, &meta_data_askey_econet)?;
+    // let log_device_askey_econet = Log::from_device(&device_askey_econet, &index_data_askey_econet, &meta_data_askey_econet)?;
     // 
     // let index_data_mitra_econet = device_mitra_econet.login_to_index(&client_mitra_econet)
     //     .await?
@@ -69,4 +79,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // let log_device_askey_lc = Log::from_device(&device_askey_lc, &index_data_askey_lc, &meta_data_askey_lc)?;
     
     Ok(())
+
 }

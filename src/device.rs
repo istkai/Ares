@@ -1,16 +1,33 @@
 use std::collections::HashMap;
 use std::error::Error;
+use std::fs::Metadata;
+use std::hash::Hash;
+use std::ops::Index;
 use reqwest::{Client, ClientBuilder};
+use serde::Serialize;
+use crate::log;
+use crate::log::Log;
 
-#[derive(Copy, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub enum Model {
+    MitraLC,
+    AskeyLC,
+    MitraEconet,
+    AskeyEconet,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Device<'a> {
     pub (crate) ip_addr: &'a str,
     mac_address: &'a str,
     pub (crate) serial_number: &'a str,
     pub (crate) admin_password: &'a str,
-    pub (crate) model: &'a str,
+    pub (crate) model: Model,
     gpon_sn: &'a str,
     firmware_version: &'a str,
+    pub index_data: IndexData,
+    pub meta_data: MetaData,
+    pub log: Log,
 }
 
 impl<'a> Device<'a> {
@@ -20,22 +37,34 @@ impl<'a> Device<'a> {
         mac_address: &'a str,
         serial_number: &'a str,
         admin_password: &'a str,
-        model: &'a str,
+        model: Model,
         gpon_sn: &'a str,
         firmware_version: &'a str) -> (Self, Client) {
 
         let client = Self::connect();
+        let index_data = IndexData::default();
+        let meta_data = MetaData::default();
 
-        (Device {
-            ip_addr,
-            mac_address,
-            serial_number,
-            admin_password,
-            model,
-            gpon_sn,
-            firmware_version,
-        },
-            client,
+        let log = Log::new(
+            format!("./log/{}/log/", serial_number),
+            format!("./log/{}/log/{}_rsx_log", serial_number, serial_number),
+            format!("./log/{}/log/{}_xmd_log", serial_number, serial_number),
+        );
+
+        (
+            Device {
+                ip_addr,
+                mac_address,
+                serial_number,
+                admin_password,
+                model,
+                gpon_sn,
+                firmware_version,
+                index_data,
+                meta_data,
+                log
+            },
+                client,
         )
 
     }
@@ -51,7 +80,7 @@ impl<'a> Device<'a> {
 
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct IndexData {
     gpon_status: String,
     optical_power: String,
@@ -65,40 +94,6 @@ pub struct IndexData {
 }
 
 impl IndexData {
-    fn new(gpon_status: &str,
-               optical_power: &str,
-               ppp_status: &str,
-               ppp_ipv4_gateway: &str,
-               wl_is_enabled_main_0: &str,
-               wl_ssid_main_0: &str,
-               wl_is_enabled_main_1: &str,
-               wl_ssid_main_1: &str,
-               ethernet_status: &str) -> Self {
-
-        let gpon_status = String::from(gpon_status);
-        let optical_power = String::from(optical_power);
-        let ppp_status = String::from(ppp_status);
-        let ppp_ipv4_gateway = String::from(ppp_ipv4_gateway);
-        let wl_is_enabled_main_0 = String::from(wl_is_enabled_main_0);
-        let wl_ssid_main_0 = String::from(wl_ssid_main_0);
-        let wl_is_enabled_main_1 = String::from(wl_is_enabled_main_1);
-        let wl_ssid_main_1 = String::from(wl_ssid_main_1);
-        let ethernet_status = String::from(ethernet_status);
-
-        IndexData {
-            gpon_status,
-            optical_power,
-            ppp_status,
-            ppp_ipv4_gateway,
-            wl_is_enabled_main_0,
-            wl_ssid_main_0,
-            wl_is_enabled_main_1,
-            wl_ssid_main_1,
-            ethernet_status
-        }
-
-    }
-
     fn set_field(&mut self, var: &str, value: &str) -> Result<(), Box<dyn Error>> {
         match var {
             "gponUp" => Ok(self.gpon_status = value.to_string()),
@@ -110,7 +105,7 @@ impl IndexData {
             "wlSsid_main0" => Ok(self.wl_ssid_main_0 = value.to_string()),
             "wlEnbl_main1" => Ok(self.wl_is_enabled_main_1 = value.to_string()),
             "wlSsid_main1" => Ok(self.wl_ssid_main_1 = value.to_string()),
-            _ => Err(format!("Unknown variable {}", var).into())
+            _ => Ok(println!("Found unknown variable \"{}\" while fetching Index Data", var))
         }
     }
 
@@ -126,25 +121,7 @@ impl IndexData {
     }
 }
 
-impl Default for IndexData {
-
-    fn default() -> Self {
-        IndexData {
-            gpon_status: String::new(),
-            optical_power: String::new(),
-            ppp_status: String::new(),
-            ppp_ipv4_gateway: String::new(),
-            wl_is_enabled_main_0: String::new(),
-            wl_ssid_main_0: String::new(),
-            wl_is_enabled_main_1: String::new(),
-            wl_ssid_main_1: String::new(),
-            ethernet_status: String::new()
-        }
-    }
-
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct MetaData {
     mac_address: String,
     serial_number: String,
@@ -154,28 +131,6 @@ pub struct MetaData {
 }
 
 impl MetaData {
-    fn new(mac_address: &str,
-           serial_number: &str,
-           model: &str,
-           gpon_sn: &str,
-           firmware_version: &str) -> Self {
-
-        let mac_address = String::from(mac_address);
-        let serial_number = String::from(serial_number);
-        let model = String::from(model);
-        let gpon_sn = String::from(gpon_sn);
-        let firmware_version = String::from(firmware_version);
-
-        MetaData {
-            mac_address,
-            serial_number,
-            model,
-            gpon_sn,
-            firmware_version
-        }
-
-    }
-
     fn set_field(&mut self, var: &str, value: &str) -> Result<(), Box<dyn Error>> {
         match var {
             "Modelo" => Ok(self.model = value.to_string()),
@@ -199,15 +154,35 @@ impl MetaData {
     }
 }
 
-impl Default for MetaData {
+impl Into<HashMap<&str, String>> for IndexData {
+    fn into<'a>(self) -> HashMap<&'static str, String> {
+        let mut hashmap: HashMap<&str, String> = HashMap::new();
+        
+        hashmap.insert("gpon_status", self.gpon_status);
+        hashmap.insert("optical_power:", self.optical_power);
+        hashmap.insert("ppp_status", self.ppp_status);
+        hashmap.insert("ppp_ipv4_gateway", self.ppp_ipv4_gateway);
+        hashmap.insert("wl_is_enabled_main_0", self.wl_is_enabled_main_0);
+        hashmap.insert("wl_ssid_main_0", self.wl_ssid_main_0);
+        hashmap.insert("wl_is_enabled_main_1", self.wl_is_enabled_main_1);
+        hashmap.insert("wl_ssid_main_1", self.wl_ssid_main_1);
+        hashmap.insert("ethernet_status", self.ethernet_status);
+    
+        hashmap
+        
+    }
+}
 
-    fn default() -> Self {
-        MetaData {
-            mac_address: String::new(),
-            serial_number: String::new(),
-            model: String::new(),
-            gpon_sn: String::new(),
-            firmware_version: String::new()
-        }
+impl Into<HashMap<&str, String>> for MetaData {
+    fn into(self) -> HashMap<&'static str, String> {
+        let mut hashmap: HashMap<&str, String> = HashMap::new();
+        
+        hashmap.insert("mac_address", self.mac_address);
+        hashmap.insert("serial_number", self.serial_number);
+        hashmap.insert("model", self.model);
+        hashmap.insert("gpon_sn", self.gpon_sn);
+        hashmap.insert("firmware_version", self.firmware_version);
+
+        hashmap
     }
 }

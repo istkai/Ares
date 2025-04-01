@@ -158,9 +158,6 @@ impl Device<'_> {
                 todo!()
             }
             Model::AskeyEconet => "/login.asp",
-            _ => {
-                unreachable!()
-            }
         };
 
         let index_login_get_url = format!("http://{}{}", self.ip_addr, index_login_get_uri);
@@ -214,30 +211,9 @@ impl Device<'_> {
                 index_data_get_response.text().await?,
             )?);
 
-            let index_log = json!(
-            [
-                {
-                    "gpon_status":"1",
-                    "optical_power":"TX:2.660000 dBm;RX:-15.990000 dBm;LT:-40.000000 dBm;LR:-40.000000 dBm",
-                    "ppp_status":"1",
-                    "ppp_ipv4_gateway":"200.204.204.146",
-                    "wl_is_enabled_main_0":"1",
-                    "wl_ssid_main_0":"VIVOFIBRA-0231",
-                    "wl_is_enabled_main_1":"1",
-                    "wl_ssid_main_1":"Benevidio",
-                    "ethernet_status":""
-                },
-                {
-                    "mac_address":"78E9CF070231",
-                    "serial_number":"78E9CF070231",
-                    "model":"RTF8115VW",
-                    "gpon_sn":"TLCM00BA1D59",
-                    "firmware_version":"BR_SV_g13.12_RTF_TEF001_V8.30_V020"
-                }
-            ]
-                        );
+            dbg!(&self.index_data);
 
-            self.log("IndexData", serde_json::to_string(&index_log)?)?;
+            self.log("IndexData", serde_json::to_string(&self.index_data)?)?;
         }
 
         Ok(self)

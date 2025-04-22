@@ -51,9 +51,6 @@ impl Device<'_> {
             Model::AskeyLC => self.handle_login_input_askey_lc(login_username),
             Model::MitraEconet => self.handle_login_input_mitra_econet(login_username),
             Model::AskeyEconet => self.handle_login_input_askey_econet(login_username),
-            _ => {
-                unreachable!()
-            }
         }
     }
 
@@ -82,9 +79,6 @@ impl Device<'_> {
                 login_form.insert("loginPassword", login_password);
                 login_form.insert("curWebPage", "/index_cliente.asp".to_string());
                 target_uri = "/cgi-bin/te_acceso_router.cgi";
-            }
-            _ => {
-                unreachable!()
             }
         }
 
@@ -158,9 +152,6 @@ impl Device<'_> {
                 todo!()
             }
             Model::AskeyEconet => "/login.asp",
-            _ => {
-                unreachable!()
-            }
         };
 
         let index_login_get_url = format!("http://{}{}", self.ip_addr, index_login_get_uri);
@@ -192,8 +183,7 @@ impl Device<'_> {
             .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
             .form(&login_form.form)
             .send()
-            .await
-            .expect("Device did not respond.");
+            .await?;
 
         Ok(self)
     }

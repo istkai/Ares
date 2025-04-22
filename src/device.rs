@@ -1,12 +1,9 @@
-use std::collections::HashMap;
-use std::error::Error;
-use std::fs::Metadata;
-use std::hash::Hash;
-use std::ops::Index;
-use reqwest::{Client, ClientBuilder};
-use serde::Serialize;
 use crate::log;
 use crate::log::Log;
+use reqwest::{Client, ClientBuilder};
+use serde::Serialize;
+use std::collections::HashMap;
+use std::error::Error;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Model {
@@ -18,11 +15,11 @@ pub enum Model {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Device<'a> {
-    pub (crate) ip_addr: &'a str,
+    pub(crate) ip_addr: &'a str,
     mac_address: &'a str,
-    pub (crate) serial_number: &'a str,
-    pub (crate) admin_password: &'a str,
-    pub (crate) model: Model,
+    pub(crate) serial_number: &'a str,
+    pub(crate) admin_password: &'a str,
+    pub(crate) model: Model,
     gpon_sn: &'a str,
     firmware_version: &'a str,
     pub index_data: IndexData,
@@ -31,7 +28,6 @@ pub struct Device<'a> {
 }
 
 impl<'a> Device<'a> {
-
     pub fn new(
         ip_addr: &'a str,
         mac_address: &'a str,
@@ -39,8 +35,8 @@ impl<'a> Device<'a> {
         admin_password: &'a str,
         model: Model,
         gpon_sn: &'a str,
-        firmware_version: &'a str) -> (Self, Client) {
-
+        firmware_version: &'a str,
+    ) -> (Self, Client) {
         let client = Self::connect();
         let index_data = IndexData::default();
         let meta_data = MetaData::default();
@@ -62,22 +58,17 @@ impl<'a> Device<'a> {
                 firmware_version,
                 index_data,
                 meta_data,
-                log
+                log,
             },
-                client,
+            client,
         )
-
     }
 
     fn connect() -> Client {
-        let client = ClientBuilder::new()
-            .cookie_store(true)
-            .build()
-            .unwrap();
+        let client = ClientBuilder::new().cookie_store(true).build().unwrap();
 
         client
     }
-
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
@@ -90,7 +81,7 @@ pub struct IndexData {
     wl_ssid_main_0: String,
     wl_is_enabled_main_1: String,
     wl_ssid_main_1: String,
-    ethernet_status: String
+    ethernet_status: String,
 }
 
 impl IndexData {
@@ -105,7 +96,10 @@ impl IndexData {
             "wlSsid_main0" => Ok(self.wl_ssid_main_0 = value.to_string()),
             "wlEnbl_main1" => Ok(self.wl_is_enabled_main_1 = value.to_string()),
             "wlSsid_main1" => Ok(self.wl_ssid_main_1 = value.to_string()),
-            _ => Ok(println!("Found unknown variable \"{}\" while fetching Index Data", var))
+            _ => Ok(println!(
+                "Found unknown variable \"{}\" while fetching Index Data",
+                var
+            )),
         }
     }
 
@@ -117,7 +111,6 @@ impl IndexData {
         }
 
         index_data
-
     }
 }
 
@@ -127,7 +120,7 @@ pub struct MetaData {
     serial_number: String,
     model: String,
     gpon_sn: String,
-    firmware_version: String
+    firmware_version: String,
 }
 
 impl MetaData {
@@ -138,7 +131,7 @@ impl MetaData {
             "Número de Série" => Ok(self.serial_number = value.to_string()),
             "Número de Série GPON" => Ok(self.gpon_sn = value.to_string()),
             "Endereço MAC da WAN" => Ok(self.mac_address = value.to_string()),
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
@@ -150,14 +143,13 @@ impl MetaData {
         }
 
         meta_data
-
     }
 }
 
 impl Into<HashMap<&str, String>> for IndexData {
     fn into<'a>(self) -> HashMap<&'static str, String> {
         let mut hashmap: HashMap<&str, String> = HashMap::new();
-        
+
         hashmap.insert("gpon_status", self.gpon_status);
         hashmap.insert("optical_power:", self.optical_power);
         hashmap.insert("ppp_status", self.ppp_status);
@@ -167,16 +159,15 @@ impl Into<HashMap<&str, String>> for IndexData {
         hashmap.insert("wl_is_enabled_main_1", self.wl_is_enabled_main_1);
         hashmap.insert("wl_ssid_main_1", self.wl_ssid_main_1);
         hashmap.insert("ethernet_status", self.ethernet_status);
-    
+
         hashmap
-        
     }
 }
 
 impl Into<HashMap<&str, String>> for MetaData {
     fn into(self) -> HashMap<&'static str, String> {
         let mut hashmap: HashMap<&str, String> = HashMap::new();
-        
+
         hashmap.insert("mac_address", self.mac_address);
         hashmap.insert("serial_number", self.serial_number);
         hashmap.insert("model", self.model);
@@ -186,3 +177,4 @@ impl Into<HashMap<&str, String>> for MetaData {
         hashmap
     }
 }
+

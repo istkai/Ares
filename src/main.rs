@@ -24,29 +24,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
     // );
 
-    let (mut device_askey_lc, client_askey_lc) = Device::new(
+    let (mut device_askey_econet, client_askey_econet) = Device::new(
         "192.168.15.1",
-        "94EAEAC2EC3F",
-        "94EAEAC2EC3F",
-        "e9et2d6g",
-        Model::AskeyLC,
+        "900A6241A451",
+        "900A6241A451",
+        "hqq5v95y",
+        Model::AskeyEconet("0192-0475-0"),
         "TLCM00246371",
         "BR_SV_g000_R3505VWN1001_s42",
     );
 
-    device_askey_lc = device_askey_lc
-        .login_to_index(&client_askey_lc)
+    // let (mut device_askey_lc, client_askey_lc) = Device::new(
+    //     "192.168.15.1",
+    //     "94EAEAC2EC3F",
+    //     "94EAEAC2EC3F",
+    //     "e9et2d6g",
+    //     Model::AskeyLC,
+    //     "TLCM00246371",
+    //     "BR_SV_g000_R3505VWN1001_s42",
+    // );
+
+    device_askey_econet = device_askey_econet
+        .login_to_index(&client_askey_econet)
         .await?
-        .fetch_index_data(&client_askey_lc)
+        .fetch_index_data(&client_askey_econet)
         .await?
-        .fetch_meta_data(&client_askey_lc)
+        .fetch_meta_data(&client_askey_econet)
         .await?;
 
     tokio::time::sleep(time::Duration::from_secs(5)).await;
 
-    dbg!(&device_askey_lc);
-
-    let _log_device_askey_lc = &device_askey_lc.log.write()?;
+    dbg!(&device_askey_econet);
 
     Ok(())
 }

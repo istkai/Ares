@@ -1,6 +1,5 @@
 use reseaux::device::{Device, Model};
 use std::error::Error;
-use std::time;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -52,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .fetch_meta_data(&client_askey_econet)
         .await?;
 
-    tokio::time::sleep(time::Duration::from_secs(5)).await;
+    // tokio::time::sleep(time::Duration::from_secs(5)).await;
 
     dbg!(&device_askey_econet);
 

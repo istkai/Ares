@@ -45,10 +45,10 @@ impl Device {
 
     fn handle_login_input(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         match self.model {
-            Model::MitraLC(_) => self.handle_login_input_mitra_lc(),
-            Model::AskeyLC(_) => self.handle_login_input_askey_lc(login_username),
-            Model::MitraEconet(_) => self.handle_login_input_mitra_econet(login_username),
-            Model::AskeyEconet(_) => self.handle_login_input_askey_econet(login_username),
+            Model::MitraLC => self.handle_login_input_mitra_lc(),
+            Model::AskeyLC => self.handle_login_input_askey_lc(login_username),
+            Model::MitraEconet => self.handle_login_input_mitra_econet(login_username),
+            Model::AskeyEconet => self.handle_login_input_askey_econet(login_username),
         }
     }
 
@@ -60,19 +60,19 @@ impl Device {
         let target_uri;
 
         match self.model {
-            Model::MitraLC(_) => {
+            Model::MitraLC => {
                 todo!()
             }
-            Model::AskeyLC(_) => {
+            Model::AskeyLC => {
                 login_form.insert("loginUsername".to_string(), login_username);
                 login_form.insert("loginPassword".to_string(), login_password);
                 login_form.insert("curWebPage".to_string(), "/login.html".to_string());
                 target_uri = "/login.cgi";
             }
-            Model::MitraEconet(_) => {
+            Model::MitraEconet => {
                 todo!()
             }
-            Model::AskeyEconet(_) => {
+            Model::AskeyEconet => {
                 login_form.insert("loginUsername".to_string(), login_username);
                 login_form.insert("loginPassword".to_string(), login_password);
                 login_form.insert("curWebPage".to_string(), "/index_cliente.asp".to_string());
@@ -138,14 +138,14 @@ impl Device {
             .unwrap_or_default();
 
         let index_login_get_uri: &str = match self.model {
-            Model::MitraLC(_) => {
+            Model::MitraLC => {
                 todo!()
             }
-            Model::AskeyLC(_) => "",
-            Model::MitraEconet(_) => {
+            Model::AskeyLC => "",
+            Model::MitraEconet => {
                 todo!()
             }
-            Model::AskeyEconet(_) => "/login.asp",
+            Model::AskeyEconet => "/login.asp",
         };
 
         let index_login_get_url = format!("http://{}{}", self.ip_address, index_login_get_uri);

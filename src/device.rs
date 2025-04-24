@@ -4,10 +4,24 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Model {
-    MitraLC(&'static str),
-    AskeyLC(&'static str),
-    MitraEconet(&'static str),
-    AskeyEconet(&'static str),
+    MitraLC,
+    AskeyLC,
+    MitraEconet,
+    AskeyEconet,
+}
+
+impl Model {
+    pub(crate) fn from_sap_code(sap: &str) -> Option<Self> {
+        match sap {
+            "0192-0431-0" | "0192-0432-1" => Some(Model::MitraLC),
+            "0192-0429-8" | "0192-0430-9" | "0192-0438-7" | "0192-0446-6" => Some(Model::AskeyLC),
+            "0192-0452-2" | "0192-0453-3" | "0192-0476-0" | "0192-0477-0" => {
+                Some(Model::MitraEconet)
+            }
+            "0192-0450-0" | "0192-0458-8" | "0192-0475-0" => Some(Model::AskeyEconet),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -16,6 +30,7 @@ pub struct Device {
     pub(crate) mac_address: String,
     pub(crate) serial_number: String,
     pub(crate) admin_password: String,
+    pub(crate) sap_code: String,
     pub(crate) model: Model,
     pub(crate) gpon_sn: String,
     pub(crate) firmware_version: String,
@@ -29,18 +44,19 @@ impl Device {
         mac_address: &str,
         serial_number: &str,
         admin_password: &str,
-        model: Model,
+        sap_code: &str,
         gpon_sn: &str,
         firmware_version: &str,
     ) -> (Self, Client) {
         let client = Self::connect();
         let index_data = IndexData::default();
         let meta_data = MetaData::default();
-
         let ip_address = String::from(ip_addr);
         let mac_address = String::from(mac_address);
         let serial_number = String::from(serial_number);
         let admin_password = String::from(admin_password);
+        let model = Model::from_sap_code(sap_code).unwrap();
+        let sap_code = String::from(sap_code);
         let gpon_sn = String::from(gpon_sn);
         let firmware_version = String::from(firmware_version);
 
@@ -50,6 +66,7 @@ impl Device {
                 mac_address,
                 serial_number,
                 admin_password,
+                sap_code,
                 model,
                 gpon_sn,
                 firmware_version,
@@ -117,8 +134,6 @@ pub struct MetaData {
 }
 
 impl MetaData {
-    // pub fn new (&str
-
     fn set_field(&mut self, var: &str, value: &str) {
         match var {
             "Modelo" => self.model = value.to_string(),
@@ -138,6 +153,29 @@ impl MetaData {
         }
 
         meta_data
+    }
+
+    pub fn sap(&self) -> Option<&str> {
+        match self.model.as_str() {
+            "RTF3505VW-N1" => Some("0192-0429-8"),
+            "RTF3505VW-N2" => Some("0192-0430-9"),
+            "GPT-2541GNAC-N1" => Some("0192-0431-0"),
+            "GPT-2541GNAC-GV" | "GPT-2541GNAC-N2" | "GPT-2541GN2A-N2" => Some("0192-0432-1"),
+            "RTF3507VW-N1" => Some("0192-0438-7"),
+            "GPT-2731GN2A4P-N1" => Some("0192-0442-2"),
+            "RTF3507VW-N2" => Some("0192-0446-6"),
+            "GPT-2731GN2A4P-N2" => Some("0192-0449-9"),
+            "RTF8115VW" => Some("0192-0450-0"),
+            "GPT-2741GNAC-N1" => Some("0192-0452-2"),
+            "GPT-2741GNAC-N2" => Some("0192-0453-3"),
+            "RTF8117VW" => Some("0192-0458-8"),
+            "RTF8115VW-SV" => Some("0192-0475-0"),
+            "GPT-2741GNAC-N1-SV" => Some("0192-0476-0"),
+            "GPT-2741GNAC-N2-SV" => Some("0192-0477-0"),
+            "GPT-2742GX4X5" => Some("0192-0483-0"),
+            "RTF8225VW" => Some("0192-0484-0"),
+            _ => None,
+        }
     }
 }
 

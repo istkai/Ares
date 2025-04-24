@@ -1,4 +1,4 @@
-use reseaux::device::{Device, Model};
+use reseaux::{device::Device, test::*};
 use std::error::Error;
 
 #[tokio::main]
@@ -28,9 +28,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "900A6241A451",
         "900A6241A451",
         "hqq5v95y",
-        Model::AskeyEconet("0192-0475-0"),
-        "TLCM00246371",
-        "BR_SV_g000_R3505VWN1001_s42",
+        "0192-0475-0",
+        "INVP70653563",
+        "BR_SG_g13.12_RTF_TEF001_V8.30_V020",
     );
 
     // let (mut device_askey_lc, client_askey_lc) = Device::new(
@@ -54,6 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // tokio::time::sleep(time::Duration::from_secs(5)).await;
 
     dbg!(&device_askey_econet);
+    dbg!(assert_meta_data(&device_askey_econet));
 
     Ok(())
 }

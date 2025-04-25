@@ -1,8 +1,7 @@
 use reqwest::{Client, ClientBuilder};
-use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Model {
     MitraLC,
     AskeyLC,
@@ -84,7 +83,7 @@ impl Device {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct IndexData {
     pub(crate) gpon_status: String,
     pub(crate) optical_power: String,
@@ -124,7 +123,7 @@ impl IndexData {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct MetaData {
     pub(crate) mac_address: String,
     pub(crate) serial_number: String,

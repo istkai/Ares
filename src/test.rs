@@ -23,54 +23,50 @@ pub fn assert_meta_data(device: &Device) -> Vec<(i32, &str)> {
 }
 
 pub fn assert_index_data(device: &Device) -> Vec<(i32, &str)> {
-    let mut status = Vec::with_capacity(9);
+    let mut status = Vec::with_capacity(5);
 
     if device.index_data.gpon_status != "1" {
         status.push((70, "Optical connection not established"));
-    }
+    } else {
+        let mut optical_power = device.index_data.optical_power.split(";").take(2);
 
-    let mut optical_power = device.index_data.optical_power.split(";").take(2);
+        let _tx = optical_power
+            .next()
+            .unwrap_or_default()
+            .split(':')
+            .nth(1)
+            .unwrap_or_default()
+            .split_whitespace()
+            .next()
+            .unwrap_or("-40.0")
+            .parse::<f32>()
+            .unwrap_or_default();
 
-    let tx = optical_power
-        .next()
-        .unwrap_or_default()
-        .split(':')
-        .nth(1)
-        .unwrap_or_default()
-        .split_whitespace()
-        .next()
-        .unwrap_or("-40.0")
-        .parse::<f32>()
-        .unwrap_or_default();
+        let rx = optical_power
+            .next()
+            .unwrap_or_default()
+            .split(':')
+            .nth(1)
+            .unwrap_or_default()
+            .split_whitespace()
+            .next()
+            .unwrap_or("-40.0")
+            .parse::<f32>()
+            .unwrap_or_default();
 
-    let rx = optical_power
-        .next()
-        .unwrap_or_default()
-        .split(':')
-        .nth(1)
-        .unwrap_or_default()
-        .split_whitespace()
-        .next()
-        .unwrap_or("-40.0")
-        .parse::<f32>()
-        .unwrap_or_default();
+        if rx > -16.0 {
+            status.push((70, "Optical Power too high"));
+        } else if rx <= -28.0 {
+            status.push((70, "Optical Power too low"));
+        }
 
-    dbg!(&tx, &rx);
+        if device.index_data.wl_is_enabled_main_0 != "1" {
+            status.push((60, "WLAN 2.4 GHz not functional"));
+        }
 
-    if rx > -16.0 {
-        status.push((70, "Optical Power too high"));
-    }
-
-    if rx <= -28.0 {
-        status.push((70, "Optical Power too low"));
-    }
-
-    if device.index_data.wl_is_enabled_main_0 != "1" {
-        status.push((60, "WLAN 2.4 GHz not functional"));
-    }
-
-    if device.index_data.wl_is_enabled_main_1 != "1" {
-        status.push((60, "WLAN 5 GHz not functional"));
+        if device.index_data.wl_is_enabled_main_1 != "1" {
+            status.push((60, "WLAN 5 GHz not functional"));
+        }
     }
 
     let mut port: u8 = 1;
@@ -87,7 +83,7 @@ pub fn assert_index_data(device: &Device) -> Vec<(i32, &str)> {
         {
             status.push((
                 72,
-                format!("Failed to communicate with port {}.", port).leak(),
+                format!("Failed to communicate with port {}", port).leak(),
             ));
         }
         port += 1;

@@ -1,4 +1,5 @@
 use crate::device::Device;
+use std::process::Command;
 
 pub fn assert_meta_data(device: &Device) -> Vec<(i32, &str)> {
     let mut status: Vec<(i32, &str)> = Vec::with_capacity(5);
@@ -23,7 +24,7 @@ pub fn assert_meta_data(device: &Device) -> Vec<(i32, &str)> {
 }
 
 pub fn assert_index_data(device: &Device) -> Vec<(i32, &str)> {
-    let mut status = Vec::with_capacity(5);
+    let mut status = Vec::with_capacity(4);
 
     if device.index_data.gpon_status != "1" {
         status.push((70, "Optical connection not established"));
@@ -59,14 +60,28 @@ pub fn assert_index_data(device: &Device) -> Vec<(i32, &str)> {
         } else if rx <= -28.0 {
             status.push((70, "Optical Power too low"));
         }
+    }
 
-        if device.index_data.wl_is_enabled_main_0 != "1" {
-            status.push((60, "WLAN 2.4 GHz not functional"));
-        }
+    let wifi_list = String::from_utf8(
+        Command::new("sh")
+            .arg("-c")
+            .arg("nmcli device wifi list")
+            .output()
+            .expect("Unable to fetch SSID list")
+            .stdout,
+    )
+    .unwrap_or_default();
 
-        if device.index_data.wl_is_enabled_main_1 != "1" {
-            status.push((60, "WLAN 5 GHz not functional"));
-        }
+    if device.index_data.wl_is_enabled_main_0 != "1" {
+        status.push((60, "WLAN 2.4 GHz not functional or not enabled"));
+    } else if !wifi_list.contains(&device.index_data.wl_ssid_main_0) {
+        status.push((60, "WLAN 2.4 GHz not functional or device yet to be reset"));
+    }
+
+    if device.index_data.wl_is_enabled_main_1 != "1" {
+        status.push((60, "WLAN 5 GHz not functional or not enabled"));
+    } else if !wifi_list.contains(&device.index_data.wl_ssid_main_1) {
+        status.push((60, "WLAN 5 GHz not functional or device yet to be reset"));
     }
 
     let mut port: u8 = 1;

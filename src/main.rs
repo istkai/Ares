@@ -55,6 +55,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     dbg!(&device_askey_econet);
     dbg!(assert_meta_data(&device_askey_econet));
+    dbg!(assert_index_data(&device_askey_econet));
 
     Ok(())
 }

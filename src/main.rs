@@ -13,25 +13,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_g8.7_1.11(WVK.0)b45"
     // );
 
-    // let (mut device_askey_econet, client_askey_econet) = Device::new(
-    //     "192.168.15.1",
-    //     "78E9CF070231",
-    //     "78E9CF070231",
-    //     "j69qjm4z",
-    //     AskeyEconet,
-    //     "TLCM00BA1D59",
-    //     "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
-    // );
-
     let (mut device_askey_econet, client_askey_econet) = Device::new(
         "192.168.15.1",
-        "900A6241A451",
-        "900A6241A451",
-        "hqq5v95y",
-        "0192-0475-0",
-        "INVP70653563",
-        "BR_SG_g13.12_RTF_TEF001_V8.30_V020",
+        "78E9CF070231",
+        "78E9CF070231",
+        "j69qjm4z",
+        "0192-0450-0",
+        "TLCM00BA1D59",
+        "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
     );
+
+    // let (mut device_askey_econet, client_askey_econet) = Device::new(
+    //     "192.168.15.1",
+    //     "900A6241A451",
+    //     "900A6241A451",
+    //     "hqq5v95y",
+    //     "0192-0475-0",
+    //     "INVP70653563",
+    //     "BR_SG_g13.12_RTF_TEF001_V8.30_V020",
+    // );
 
     // let (mut device_askey_lc, client_askey_lc) = Device::new(
     //     "192.168.15.1",

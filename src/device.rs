@@ -85,15 +85,15 @@ impl Device {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct IndexData {
-    pub(crate) gpon_status: String,
-    pub(crate) optical_power: String,
-    pub(crate) ppp_status: String,
-    pub(crate) ppp_ipv4_gateway: String,
-    pub(crate) wl_is_enabled_main_0: String,
-    pub(crate) wl_ssid_main_0: String,
-    pub(crate) wl_is_enabled_main_1: String,
-    pub(crate) wl_ssid_main_1: String,
-    pub(crate) ethernet_status: String,
+    pub gpon_status: String,
+    pub optical_power: String,
+    pub ppp_status: String,
+    pub ppp_ipv4_gateway: String,
+    pub wl_is_enabled_main_0: String,
+    pub wl_ssid_main_0: String,
+    pub wl_is_enabled_main_1: String,
+    pub wl_ssid_main_1: String,
+    pub ethernet_status: String,
 }
 
 impl IndexData {

@@ -1,5 +1,6 @@
-use reseaux::{device::Device, test::*};
+use ares::{device::Device, test::*};
 use std::error::Error;
+use std::time;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -47,15 +48,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .login_to_index(&client_askey_econet)
         .await?
         .fetch_index_data(&client_askey_econet)
-        .await?
+        .await
+        .map(|device| -> Result<Device, ()> {
+            if device.index_data.ppp_status.is_empty() {
+                println!("[90]: Incorrect password. Please verify");
+                std::process::exit(0);
+            } else {
+                Ok(device)
+            }
+        })
+        .expect("")
+        .unwrap()
         .fetch_meta_data(&client_askey_econet)
         .await?;
 
-    // tokio::time::sleep(time::Duration::from_secs(5)).await;
+    for status in assert_meta_data(&device_askey_econet).iter() {
+        println!("[{}]: {}", status.0, status.1);
+    }
 
-    dbg!(&device_askey_econet);
-    dbg!(assert_meta_data(&device_askey_econet));
-    dbg!(assert_index_data(&device_askey_econet));
+    for status in assert_index_data(&device_askey_econet).iter() {
+        println!("[{}]: {}", status.0, status.1);
+    }
 
     Ok(())
 }

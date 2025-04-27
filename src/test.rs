@@ -62,7 +62,7 @@ pub fn assert_index_data(device: &Device) -> Vec<(i32, &str)> {
         }
     }
 
-    let wifi_list = String::from_utf8(
+    let wifi_list: String = String::from_utf8(
         Command::new("sh")
             .arg("-c")
             .arg("nmcli device wifi list")

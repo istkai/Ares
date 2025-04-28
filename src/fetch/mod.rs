@@ -1,13 +1,24 @@
 use crate::{
     crypt::bitwise_xor,
     device::{Device, IndexData, MetaData, Model},
-    form::Form,
 };
 use regex::Regex;
 use reqwest::{Client, header};
 use scraper::{Html, Selector};
 use std::collections::HashMap;
 use std::error::Error;
+
+#[derive(Default)]
+pub struct Form<'a> {
+    pub form: HashMap<String, String>,
+    pub(crate) target_uri: &'a str,
+}
+
+impl<'a> Form<'a> {
+    pub fn new(form: HashMap<String, String>, target_uri: &'a str) -> Self {
+        Form { form, target_uri }
+    }
+}
 
 impl Device {
     fn handle_login_input_mitra_lc(&self) -> Result<(String, String), Box<dyn Error>> {

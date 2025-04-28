@@ -1,4 +1,11 @@
-use ares::{device::Device, test::*};
+pub mod crypt;
+pub mod device;
+pub mod fetch;
+pub mod test;
+
+use crate::device::Device;
+use crate::test::*;
+
 use std::error::Error;
 
 #[tokio::main]
@@ -70,8 +77,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap()
         .fetch_meta_data(&client_askey_econet)
         .await?;
-
-    dbg!(&device_askey_econet);
 
     for status in assert_meta_data(&device_askey_econet).iter() {
         println!("[{}]: {}", status.0, status.1);

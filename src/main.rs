@@ -10,14 +10,14 @@ use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // let (device_mitra_econet, client_mitra_econet) = Device::new(
+    // let (mut device_mitra_econet, client_mitra_econet) = Device::new(
     //     "192.168.15.1",
     //     "C03DD93B97E0",
     //     "C03DD93B97E0",
     //     "d1f87fa2",
-    //     "Mitra-Econet",
+    //     "0192-0453-3",
     //     "MSTC393A9372",
-    //     "BR_g8.7_1.11(WVK.0)b45"
+    //     "BR_g8.7_1.11(WVK.0)b45",
     // );
 
     // let (mut device_askey_econet, client_askey_econet) = Device::new(
@@ -30,25 +30,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
     // );
 
-    let (mut device_askey_econet, client_askey_econet) = Device::new(
-        "192.168.15.1",
-        "F454209AF2E1",
-        "F454209AF2E1",
-        "65rffsmj",
-        "0192-0458-8",
-        "TLCM00FC32AC",
-        "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
-    );
-
     // let (mut device_askey_econet, client_askey_econet) = Device::new(
     //     "192.168.15.1",
-    //     "900A6241A451",
-    //     "900A6241A451",
-    //     "hqq5v95y",
-    //     "0192-0475-0",
-    //     "INVP70653563",
-    //     "BR_SG_g13.12_RTF_TEF001_V8.30_V020",
+    //     "F454209AF2E1",
+    //     "F454209AF2E1",
+    //     "65rffsmj",
+    //     "0192-0458-8",
+    //     "TLCM00FC32AC",
+    //     "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
     // );
+
+    let (mut device_askey_econet, client_askey_econet) = Device::new(
+        "192.168.15.1",
+        "900A6241A451",
+        "900A6241A451",
+        "hqq5v95y",
+        "0192-0475-0",
+        "INVP70653563",
+        "BR_SG_g13.12_RTF_TEF001_V8.30_V020",
+    );
 
     // let (mut device_askey_lc, client_askey_lc) = Device::new(
     //     "192.168.15.1",
@@ -77,6 +77,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap()
         .fetch_meta_data(&client_askey_econet)
         .await?;
+
+    dbg!(&device_askey_econet);
 
     for status in assert_meta_data(&device_askey_econet).iter() {
         println!("[{}]: {}", status.0, status.1);

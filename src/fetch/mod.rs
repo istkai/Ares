@@ -63,7 +63,7 @@ impl Device {
         }
     }
 
-    fn generate_login_form<'a>(
+    fn generate_login_form(
         &self,
         (login_username, login_password): (String, String),
     ) -> Result<Form, Box<dyn Error>> {
@@ -143,7 +143,7 @@ impl Device {
         Ok(vars)
     }
 
-    pub async fn login_to_index<'a>(self, client: &Client) -> Result<Self, Box<dyn Error>> {
+    pub async fn login_to_index(self, client: &Client) -> Result<Self, Box<dyn Error>> {
         let login_form = self
             .generate_login_form(self.handle_login_input("admin").unwrap_or_default())
             .unwrap_or_default();

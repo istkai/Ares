@@ -54,12 +54,28 @@ impl Device {
         Ok((login_username, login_password))
     }
 
+    fn handle_login_input_mitra_wifi6(
+        &self,
+        login_username: &str,
+    ) -> Result<(String, String), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn handle_login_input_askey_wifi6(
+        &self,
+        login_username: &str,
+    ) -> Result<(String, String), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
     fn handle_login_input(&self, login_username: &str) -> Result<(String, String), Box<dyn Error>> {
         match self.model {
             Model::MitraLC => self.handle_login_input_mitra_lc(),
             Model::AskeyLC => self.handle_login_input_askey_lc(login_username),
             Model::MitraEconet => self.handle_login_input_mitra_econet(login_username),
             Model::AskeyEconet => self.handle_login_input_askey_econet(login_username),
+            Model::MitraWiFi6 => self.handle_login_input_mitra_wifi6(login_username),
+            Model::AskeyWiFi6 => self.handle_login_input_askey_econet(login_username),
         }
     }
 
@@ -88,6 +104,15 @@ impl Device {
                 login_form.insert("loginPassword".to_string(), login_password);
                 login_form.insert("curWebPage".to_string(), "/index_cliente.asp".to_string());
                 target_uri = "/cgi-bin/te_acceso_router.cgi";
+            }
+            Model::MitraWiFi6 => {
+                todo!()
+            }
+            Model::AskeyWiFi6 => {
+                login_form.insert("loginUsername".to_string(), login_username);
+                login_form.insert("loginPassword".to_string(), login_password);
+                login_form.insert("curWebPage".to_string(), "/login.html".to_string());
+                target_uri = "/login.cgi";
             }
         }
 
@@ -157,6 +182,10 @@ impl Device {
                 todo!()
             }
             Model::AskeyEconet => "/login.asp",
+            Model::MitraWiFi6 => {
+                todo!()
+            }
+            Model::AskeyWiFi6 => "/login.asp",
         };
 
         let index_login_get_url = format!("http://{}{}", self.ip_address, index_login_get_uri);

@@ -7,6 +7,8 @@ pub enum Model {
     AskeyLC,
     MitraEconet,
     AskeyEconet,
+    MitraWiFi6,
+    AskeyWiFi6,
 }
 
 impl Model {
@@ -18,6 +20,8 @@ impl Model {
                 Some(Model::MitraEconet)
             }
             "0192-0450-0" | "0192-0458-8" | "0192-0475-0" => Some(Model::AskeyEconet),
+            "0192-0483-0" => Some(Model::MitraWiFi6),
+            "0192-0484-0" => Some(Model::AskeyEconet),
             _ => None,
         }
     }

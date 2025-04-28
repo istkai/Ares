@@ -1,6 +1,5 @@
 use ares::{device::Device, test::*};
 use std::error::Error;
-use std::time;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

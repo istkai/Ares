@@ -16,7 +16,7 @@ pub fn assert_meta_data(device: &Device) -> Vec<(i32, &str)> {
         status.push((-1, "Incorrect Device Model"));
     }
 
-    if device.firmware_version != device.meta_data.firmware_version {
+    if device.firmware_version.split_at(5).1 != device.meta_data.firmware_version.split_at(5).1 {
         status.push((-1, "Firmware out of date"));
     }
 
@@ -84,24 +84,57 @@ pub fn assert_index_data(device: &Device) -> Vec<(i32, &str)> {
         status.push((60, "WLAN 5 GHz not functional or device yet to be reset"));
     }
 
-    let mut port: u8 = 1;
+    if device.index_data.hpna_status.is_empty() {
+        let mut port: u8 = 1;
 
-    for i in [9, 20, 31, 42] {
+        for i in [9, 20, 31, 42] {
+            if device
+                .index_data
+                .ethernet_status
+                .char_indices()
+                .nth(i)
+                .unwrap_or_default()
+                .1
+                == '0'
+            {
+                status.push((
+                    72,
+                    format!("Failed to communicate with port {}", port).leak(),
+                ));
+            }
+            port += 1;
+        }
+    } else {
+        let mut port: u8 = 1;
+
+        for i in [9, 20, 31] {
+            if device
+                .index_data
+                .ethernet_status
+                .char_indices()
+                .nth(i)
+                .unwrap_or_default()
+                .1
+                == '0'
+            {
+                status.push((
+                    72,
+                    format!("Failed to communicate with port {}", port).leak(),
+                ));
+            }
+            port += 1;
+        }
+
         if device
             .index_data
-            .ethernet_status
-            .char_indices()
-            .nth(i)
+            .hpna_status
+            .chars()
+            .last()
             .unwrap_or_default()
-            .1
-            == '0'
+            != '1'
         {
-            status.push((
-                72,
-                format!("Failed to communicate with port {}", port).leak(),
-            ));
+            status.push((79, "Failed to communicate with HPNA port"));
         }
-        port += 1;
     }
 
     status

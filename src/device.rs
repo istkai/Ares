@@ -94,6 +94,7 @@ pub struct IndexData {
     pub wl_is_enabled_main_1: String,
     pub wl_ssid_main_1: String,
     pub ethernet_status: String,
+    pub hpna_status: String,
 }
 
 impl IndexData {
@@ -108,6 +109,7 @@ impl IndexData {
             "wlSsid_main0" => self.wl_ssid_main_0 = value.to_string(),
             "wlEnbl_main1" => self.wl_is_enabled_main_1 = value.to_string(),
             "wlSsid_main1" => self.wl_ssid_main_1 = value.to_string(),
+            "hpnaSelfIntfCfg" => self.hpna_status = value.to_string(),
             _ => (),
         };
     }

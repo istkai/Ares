@@ -1,31 +1,8 @@
+pub use crate::device::model::Model;
 use reqwest::{Client, ClientBuilder};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Model {
-    MitraLC,
-    AskeyLC,
-    MitraEconet,
-    AskeyEconet,
-    MitraWiFi6,
-    AskeyWiFi6,
-}
-
-impl Model {
-    pub(crate) fn from_sap_code(sap: &str) -> Option<Self> {
-        match sap {
-            "0192-0431-0" | "0192-0432-1" => Some(Model::MitraLC),
-            "0192-0429-8" | "0192-0430-9" | "0192-0438-7" | "0192-0446-6" => Some(Model::AskeyLC),
-            "0192-0452-2" | "0192-0453-3" | "0192-0476-0" | "0192-0477-0" => {
-                Some(Model::MitraEconet)
-            }
-            "0192-0450-0" | "0192-0458-8" | "0192-0475-0" => Some(Model::AskeyEconet),
-            "0192-0483-0" => Some(Model::MitraWiFi6),
-            "0192-0484-0" => Some(Model::AskeyEconet),
-            _ => None,
-        }
-    }
-}
+pub mod model;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Device {
@@ -89,16 +66,16 @@ impl Device {
 
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct IndexData {
-    pub gpon_status: String,
-    pub optical_power: String,
-    pub ppp_status: String,
-    pub ppp_ipv4_gateway: String,
-    pub wl_is_enabled_main_0: String,
-    pub wl_ssid_main_0: String,
-    pub wl_is_enabled_main_1: String,
-    pub wl_ssid_main_1: String,
-    pub ethernet_status: String,
-    pub hpna_status: String,
+    pub(crate) gpon_status: String,
+    pub(crate) optical_power: String,
+    pub(crate) ppp_status: String,
+    pub(crate) ppp_ipv4_gateway: String,
+    pub(crate) wl_is_enabled_main_0: String,
+    pub(crate) wl_ssid_main_0: String,
+    pub(crate) wl_is_enabled_main_1: String,
+    pub(crate) wl_ssid_main_1: String,
+    pub(crate) ethernet_status: String,
+    pub(crate) hpna_status: String,
 }
 
 impl IndexData {

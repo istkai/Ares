@@ -154,7 +154,7 @@ impl MetaData {
             "RTF8115VW-SV" => Some("0192-0475-0"),
             "GPT-2741GNAC-N1-SV" => Some("0192-0476-0"),
             "GPT-2741GNAC-N2-SV" => Some("0192-0477-0"),
-            "GPT-2742GX4X5" => Some("0192-0483-0"),
+            "GPT-2742GX4X5v6" => Some("0192-0483-0"),
             "RTF8225VW" => Some("0192-0484-0"),
             _ => None,
         }

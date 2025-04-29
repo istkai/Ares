@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Form<'a> {
     pub form: HashMap<String, String>,
     pub(crate) target_uri: &'a str,

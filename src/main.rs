@@ -20,15 +20,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_g8.7_1.11(WVK.0)b45",
     // );
 
-    let (mut device_askey_econet, client_askey_econet) = Device::new(
-        "192.168.15.1",
-        "78E9CF070231",
-        "78E9CF070231",
-        "j69qjm4z",
-        "0192-0450-0",
-        "TLCM00BA1D59",
-        "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
-    );
+    // let (mut device_askey_econet, client_askey_econet) = Device::new(
+    //     "192.168.15.1",
+    //     "78E9CF070231",
+    //     "78E9CF070231",
+    //     "j69qjm4z",
+    //     "0192-0450-0",
+    //     "TLCM00BA1D59",
+    //     "BR_SV_g13.12_RTF_TEF001_V8.30_V020",
+    // );
 
     // let (mut device_askey_econet, client_askey_econet) = Device::new(
     //     "192.168.15.1",
@@ -50,15 +50,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_SG_g13.12_RTF_TEF001_V8.30_V020",
     // );
 
-    // let (mut device_askey_wifi6, client_askey_wifi6) = Device::new(
-    //     "192.168.15.1",
-    //     "44896D288381",
-    //     "44896D288381",
-    //     "64dE9wJz",
-    //     "0192-0484-0",
-    //     "TLCM01E319AB",
-    //     "BR_SV_g1.4_RTF_TEF004_V2.9",
-    // );
+    let (mut device_askey_wifi6, client_askey_wifi6) = Device::new(
+        "192.168.15.1",
+        "44896D288381",
+        "44896D288381",
+        "64dE9wJz",
+        "0192-0484-0",
+        "TLCM01E319AB",
+        "BR_SV_g1.4_RTF_TEF004_V2.9NAIR",
+    );
 
     // let (mut device_askey_lc, client_askey_lc) = Device::new(
     //     "192.168.15.1",
@@ -70,10 +70,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //     "BR_SV_g000_R3505VWN1001_s42",
     // );
 
-    device_askey_econet = device_askey_econet
-        .login_to_index(&client_askey_econet)
+    device_askey_wifi6 = device_askey_wifi6
+        .login_to_index(&client_askey_wifi6)
         .await?
-        .fetch_index_data(&client_askey_econet)
+        .fetch_index_data(&client_askey_wifi6)
         .await
         .map(|device| -> Result<Device, ()> {
             if device.index_data.ppp_status.is_empty() {
@@ -85,16 +85,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
         .expect("")
         .unwrap()
-        .fetch_meta_data(&client_askey_econet)
+        .fetch_meta_data(&client_askey_wifi6)
         .await?;
 
-    dbg!(&device_askey_econet);
+    dbg!(&device_askey_wifi6);
 
-    for status in meta_test(&device_askey_econet).iter() {
+    for status in meta_test(&device_askey_wifi6).iter() {
         println!("[{}]: {}", status.0, status.1);
     }
 
-    for status in index_test(&device_askey_econet).iter() {
+    for status in index_test(&device_askey_wifi6).iter() {
         println!("[{}]: {}", status.0, status.1);
     }
 

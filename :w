@@ -7,7 +7,7 @@ pub struct Form {
 }
 
 impl Form {
-    pub fn new(form: HashMap<String, String>, target_uri: &str) -> Self {
+    pub fn new(form: HashMap<String, String>, target_uri: &'a str) -> Self {
         Form {
             form,
             target_uri: target_uri.to_string(),

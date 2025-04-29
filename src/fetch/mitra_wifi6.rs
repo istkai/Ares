@@ -75,18 +75,6 @@ pub(crate) async fn login_to_index(
 
     dbg!(&index_login_post_response);
 
-    // let _index_login_post_response = client
-    //         .post(&index_login_post_url)
-    //         .header(
-    //             header::USER_AGENT,
-    //             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0",
-    //         )
-    //         .header(header::REFERER, &index_login_post_url)
-    //         .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
-    //         .form(&login_form.form)
-    //         .send()
-    //         .await?;
-
     dbg!(index_login_post_response.text().await?.to_string());
 
     Ok(device)

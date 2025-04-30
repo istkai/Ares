@@ -1,7 +1,7 @@
 use crate::{
     crypt,
     device::{Device, IndexData, MetaData, Model},
-    fetch::form::Form,
+    fetch::{form::Form, variant::Variant},
 };
 use regex::Regex;
 use reqwest::{Client, header};
@@ -9,6 +9,7 @@ use scraper::{Html, Selector};
 use std::collections::HashMap;
 
 mod form;
+mod variant;
 
 impl Device {
     fn handle_login_input_mitra_lc(
@@ -293,16 +294,42 @@ impl Device {
         Ok(vars)
     }
 
-    fn handle_login_input_mitra_wifi6(
+    async fn handle_login_input_mitra_wifi6(
         &self,
         login_username: &str,
+        client: &Client,
     ) -> Result<(String, String), Box<dyn std::error::Error>> {
+        let index_login_get_uri = "/cgi-bin/login.cgi";
+        let index_login_get_url = format!("http://{}/cgi-bin/login.cgi", &self.ip_address);
+
+        let index_login_get_response = client
+            .get(&index_login_get_url)
+            .header(
+                header::USER_AGENT,
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            )
+            .header(header::REFERER, &index_login_get_url)
+            .send()
+            .await
+            .map_err(|_| {
+                println!("[90]: Device did not respond or incorrect password");
+            })
+            .unwrap()
+            .text()
+            .await?;
+
         let login_username = login_username.to_string();
-        let sid = "709f9050";
+
+        let sid = self
+            .collect_variables_from_response_mitra_wifi6(
+                &index_login_get_uri,
+                index_login_get_response,
+            )
+            .single_or_default();
 
         let login_password = format!(
             "{:x}",
-            md5::compute(format!("{}:{}", self.admin_password, sid))
+            md5::compute(format!("{}:{}", self.admin_password, &sid))
         );
 
         Ok((login_username, login_password))
@@ -313,7 +340,7 @@ impl Device {
         (login_username, login_password): (String, String),
     ) -> Result<Form, Box<dyn std::error::Error>> {
         let mut login_form = HashMap::new();
-        let target_uri = "/login.cgi";
+        let target_uri = "/cgi-bin/login.cgi";
 
         login_form.insert("Loginuser".to_string(), login_username);
         login_form.insert("LoginPasswordValue".to_string(), login_password);
@@ -327,24 +354,9 @@ impl Device {
         client: &Client,
         login_form: Form,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let index_login_get_url = format!("http://{}", &self.ip_address);
-
-        let _index_login_get_response = client
-            .get(&index_login_get_url)
-            .header(
-                header::USER_AGENT,
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            )
-            .header(header::REFERER, &index_login_get_url)
-            .send()
-            .await
-            .map_err(|_| {
-                println!("[90]: Device did not respond or incorrect password");
-            });
-
         let index_login_post_url = format!("http://{}{}", &self.ip_address, login_form.target_uri);
 
-        let index_login_post_response = client
+        let _index_login_post_response = client
             .post(&index_login_post_url)
             .header(
                 header::USER_AGENT,
@@ -356,18 +368,39 @@ impl Device {
             .send()
             .await?;
 
-        dbg!(&index_login_post_response);
-
-        dbg!(index_login_post_response.text().await?.to_string());
-
         Ok(self)
     }
 
     async fn fetch_index_data_mitra_wifi6(
         self,
-        _client: &Client,
+        client: &Client,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        todo!()
+        let index_info_get_uri = "/cgi-bin/sophia_info.cgi";
+        let index_info_get_url = format!("http://{}{}", self.ip_address, &index_info_get_uri);
+
+        let index_info_get_response = client
+            .get(index_info_get_url)
+            .header(
+                header::USER_AGENT,
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0",
+            )
+            .header(header::REFERER, "http://192.168.15.1/cgi-bin/login.cgi")
+            .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .send()
+            .await?
+            .text_with_charset("utf-8")
+            .await?;
+
+        dbg!(&index_info_get_response);
+
+        let vars = self.collect_variables_from_response_mitra_wifi6(
+            "/cgi-bin/sophia_info.cgi",
+            index_info_get_response,
+        );
+
+        dbg!(&vars);
+
+        Ok(self)
     }
 
     async fn fetch_meta_data_mitra_wifi6(
@@ -379,15 +412,58 @@ impl Device {
 
     fn collect_variables_from_response_mitra_wifi6(
         &self,
-        _uri: &str,
-        _response: String,
-    ) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
-        todo!()
+        uri: &str,
+        response: String,
+    ) -> Variant<String, HashMap<String, String>> {
+        match uri {
+            "/cgi-bin/login.cgi" => {
+                let fetch_pattern =
+                    regex::Regex::new(r#"var\s+sid\s*=\s*['"]([a-fA-F0-9]+)['"]"#).unwrap();
+
+                let capture = fetch_pattern
+                    .captures(&response)
+                    .and_then(|capture| capture.get(1).map(|m| m.as_str().to_string()))
+                    .unwrap_or_default();
+
+                Variant::Single(capture)
+            }
+            "/cgi-bin/sophia_info.cgi" => {
+                let document = Html::parse_fragment(&*response);
+                let td_selector = Selector::parse("td").unwrap();
+
+                let mut vars = HashMap::new();
+                let mut key = None;
+
+                for element in document.select(&td_selector) {
+                    let text = element
+                        .text()
+                        .collect::<Vec<_>>()
+                        .join("")
+                        .trim()
+                        .to_string();
+
+                    if key.is_none() && text.ends_with(':') {
+                        key = Some(text.trim_end_matches(':').to_string());
+                    } else if let Some(k) = key.take() {
+                        let value = if k == "Endereço MAC da WAN" {
+                            text.replace(":", "") // Remove colons from MAC address
+                        } else {
+                            text
+                        };
+                        vars.insert(k, value);
+                    }
+                }
+
+                Variant::Multiple(vars)
+            }
+            _ => Variant::None,
+        }
     }
 
-    fn generate_login_form(
+    async fn generate_login_form(
         &self,
         login_username: &str,
+        client: &Client,
     ) -> Result<Form, Box<dyn std::error::Error>> {
         match self.model {
             Model::MitraLC => {
@@ -403,7 +479,7 @@ impl Device {
                 self.handle_login_input_askey_econet(login_username)?,
             ),
             Model::MitraWiFi6 => self.generate_login_form_mitra_wifi6(
-                self.handle_login_input_mitra_wifi6(login_username)?,
+                self.handle_login_input_mitra_wifi6("admin", client).await?,
             ),
             Model::AskeyWiFi6 => self.generate_login_form_askey_econet(
                 self.handle_login_input_askey_econet(login_username)?,
@@ -421,13 +497,14 @@ impl Device {
             Model::AskeyLC => self.collect_variables_from_response_askey_lc(uri, response),
             Model::MitraEconet => self.collect_variables_from_response_mitra_econet(uri, response),
             Model::AskeyEconet => self.collect_variables_from_response_askey_econet(uri, response),
-            Model::MitraWiFi6 => self.collect_variables_from_response_mitra_wifi6(uri, response),
+            // Model::MitraWiFi6 => self.collect_variables_from_response_mitra_wifi6(uri, response),
             Model::AskeyWiFi6 => self.collect_variables_from_response_askey_econet(uri, response),
+            _ => unreachable!(),
         }
     }
 
     pub async fn login_to_index(self, client: &Client) -> Result<Self, Box<dyn std::error::Error>> {
-        let login_form = self.generate_login_form("admin")?;
+        let login_form = self.generate_login_form("admin", client).await?;
 
         match self.model {
             Model::MitraLC => self.login_to_index_mitra_lc(client, login_form).await,

@@ -8,15 +8,15 @@ use crate::test::*;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let (mut device_mitra_wifi6, client_mitra_wifi6) = Device::new(
-    //     "192.168.15.1",
-    //     "840BBBB4D8F1",
-    //     "840BBBB4D8F1",
-    //     "ubPnVrRf",
-    //     "0192-0483-0",
-    //     "MSTCFFF3020D",
-    //     "GL_g1.13_100XNT0b17_2",
-    // );
+    let (mut device_mitra_wifi6, client_mitra_wifi6) = Device::new(
+        "192.168.15.1",
+        "840BBBB4D8F1",
+        "840BBBB4D8F1",
+        "ubPnVrRf",
+        "0192-0483-0",
+        "MSTCFFF3020D",
+        "GL_g1.13_100XNT0b17_2",
+    );
 
     // let (mut device_mitra_econet, client_mitra_econet) = Device::new(
     //     "192.168.15.1",
@@ -58,15 +58,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     "BR_SG_g13.12_RTF_TEF001_V8.30_V020",
     // );
 
-    let (mut device_askey_wifi6, client_askey_wifi6) = Device::new(
-        "192.168.15.1",
-        "44896D288381",
-        "44896D288381",
-        "64dE9wJz",
-        "0192-0484-0",
-        "TLCM01E319AB",
-        "BR_SV_g1.4_RTF_TEF004_V2.9",
-    );
+    // let (mut device_askey_wifi6, client_askey_wifi6) = Device::new(
+    //     "192.168.15.1",
+    //     "44896D288381",
+    //     "44896D288381",
+    //     "64dE9wJz",
+    //     "0192-0484-0",
+    //     "TLCM01E319AB",
+    //     "BR_SV_g1.4_RTF_TEF004_V2.9",
+    // );
 
     // let (mut device_askey_lc, client_askey_lc) = Device::new(
     //     "192.168.15.1",
@@ -78,10 +78,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     "BR_SV_g000_R3505VWN1001_s42",
     // );
 
-    device_askey_wifi6 = device_askey_wifi6
-        .login_to_index(&client_askey_wifi6)
+    device_mitra_wifi6 = device_mitra_wifi6
+        .login_to_index(&client_mitra_wifi6)
         .await?
-        .fetch_index_data(&client_askey_wifi6)
+        .fetch_index_data(&client_mitra_wifi6)
         .await
         .map(|device| -> Result<Device, ()> {
             if device.index_data.ppp_status.is_empty() {
@@ -93,16 +93,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .expect("")
         .unwrap()
-        .fetch_meta_data(&client_askey_wifi6)
+        .fetch_meta_data(&client_mitra_wifi6)
         .await?;
 
-    dbg!(&device_askey_wifi6);
+    dbg!(&device_mitra_wifi6);
 
-    for status in meta_test(&device_askey_wifi6).iter() {
+    for status in meta_test(&device_mitra_wifi6).iter() {
         println!("[{}]: {}", status.0, status.1);
     }
 
-    for status in index_test(&device_askey_wifi6).iter() {
+    for status in index_test(&device_mitra_wifi6).iter() {
         println!("[{}]: {}", status.0, status.1);
     }
 

@@ -1,0 +1,50 @@
+192.168.15.1:
+
+#file
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Vivo</title>
+    <link rel="stylesheet" type="text/css" href="/html/assets/_css/gateway_sophia.css" />
+    <link rel="stylesheet" type="text/css" href="/html/assets/_js/fancybox/jquery.fancybox.css" />
+    <script type="text/javascript" src="/html/assets/_js/jquery-3.6.3.min.js"></script>
+    <script type="text/javascript" src="/html/assets/_js/jquery-migrate-1.4.1.js"></script>
+    <script type="text/javascript" src="/html/assets/_js/fancybox/jquery.fancybox.pack.js"></script>
+    <script>
+        window.onload = function () {
+			document.getElementsByName("basefrm")[0].src = "/cgi-bin/sophia_info.cgi";
+        }
+          
+        $(document).ready(function () {
+            $('#accordion a.item').click(function () {
+                $('#accordion li').children('ul').slideUp('fast');
+                $("#accordion a").removeClass("active");
+                $(this).addClass("active");
+                $(this).siblings('ul').slideDown('fast');
+                return false;
+            });
+        });
+    </script>
+</head>
+
+
+
+
+
+<frameset rows='140,*' border='0' frameborder='0' framespacing='0'>
+    <frame src='/cgi-bin/sophia_header.cgi' name='header' frameborder='no' border='0' scrolling='no' target='_self' marginwidth='0' marginheight='0' noresize>
+        <frameset cols='1*,1000,1*' border='0' frameborder='0' framespacing='0'>
+			<frame src='/cgi-bin/html_sophia/sophia_side.html' name='left' frameborder='no' border='0' scrolling='no' target='_self' marginwidth='0' marginheight='0' noresize>
+                <frameset cols='240,*' border='0' frameborder='0' framespacing='0'>
+                    <frame src='/cgi-bin/sophia_menu.cgi' name='menufrm' frameborder='no' border='0' scrolling='no' target='_self' marginwidth='0' marginheight='40' noresize>
+                        <frame name="basefrm" id='basefrm' frameborder='no' border='0' target='_self' marginwidth='0' marginheight='50' noresize>
+
+                </frameset>
+					<frame src='/cgi-bin/html_sophia/sophia_side.html' name='right' frameborder='no' border='0' scrolling='no' target='_self' marginwidth='0' marginheight='0' noresize>
+        </frameset>
+</frameset>
+</html>
+
+#endfile

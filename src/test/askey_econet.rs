@@ -1,4 +1,4 @@
-use crate::device::Device;
+use crate::device::{Device, Model};
 use std::process::Command;
 
 pub(crate) fn meta_test(device: &Device) -> Vec<(i32, &str)> {
@@ -62,26 +62,69 @@ pub(crate) fn index_test(device: &Device) -> Vec<(i32, &str)> {
         }
     }
 
-    let wifi_list: String = String::from_utf8(
-        Command::new("sh")
-            .arg("-c")
-            .arg("nmcli device wifi list")
-            .output()
-            .expect("Unable to fetch SSID list")
-            .stdout,
-    )
-    .unwrap_or_default();
+    let mut reset = true;
 
-    if device.index_data.wl_is_enabled_main_0 != "1" {
-        status.push((60, "WLAN 2.4 GHz not functional or not enabled"));
-    } else if !wifi_list.contains(&device.index_data.wl_ssid_main_0) {
-        status.push((60, "WLAN 2.4 GHz not functional or device yet to be reset"));
+    match device.model {
+        Model::AskeyEconet => {
+            if &device.index_data.wl_ssid_main_0
+                != &format!("VIVOFIBRA-{}", &device.serial_number[8..])
+            {
+                reset = false;
+
+                status.push((
+                    74,
+                    "Device not properly reset, please reset so WiFi can be tested",
+                ))
+            }
+
+            if &device.index_data.wl_ssid_main_1
+                != &format!("VIVOFIBRA-{}-5G", &device.serial_number[8..])
+            {
+                reset = false;
+
+                status.push((
+                    74,
+                    "Device not properly reset, please reset so WiFi can be tested",
+                ))
+            }
+        }
+        Model::AskeyWiFi6 => {
+            if &device.index_data.wl_ssid_main_0
+                != &format!("VIVOFIBRA-WIFI6-{}", &device.serial_number[8..])
+            {
+                reset = false;
+
+                status.push((
+                    74,
+                    "Device not properly reset, please reset so WiFi can be tested",
+                ))
+            }
+        }
+        _ => unreachable!(),
     }
 
-    if device.index_data.wl_is_enabled_main_1 != "1" {
-        status.push((60, "WLAN 5 GHz not functional or not enabled"));
-    } else if !wifi_list.contains(&device.index_data.wl_ssid_main_1) {
-        status.push((60, "WLAN 5 GHz not functional or device yet to be reset"));
+    if reset {
+        let wifi_list: String = String::from_utf8(
+            Command::new("sh")
+                .arg("-c")
+                .arg("nmcli device wifi list")
+                .output()
+                .expect("Unable to fetch SSID list")
+                .stdout,
+        )
+        .unwrap_or_default();
+
+        if device.index_data.wl_is_enabled_main_0 != "1" {
+            status.push((60, "WLAN 2.4 GHz not functional"));
+        } else if !wifi_list.contains(&device.index_data.wl_ssid_main_0) {
+            status.push((60, "WLAN 2.4 GHz not functional"));
+        }
+
+        if device.index_data.wl_is_enabled_main_1 != "1" {
+            status.push((60, "WLAN 5 GHz not functional"));
+        } else if !wifi_list.contains(&device.index_data.wl_ssid_main_1) {
+            status.push((60, "WLAN 5 GHz not functional"));
+        }
     }
 
     if device.index_data.hpna_status.is_empty() {

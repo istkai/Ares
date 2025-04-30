@@ -3,10 +3,12 @@ use crate::{
     device::{Device, IndexData, MetaData, Model},
     fetch::{form::Form, variant::Variant},
 };
+use html_escape::decode_html_entities;
 use regex::Regex;
 use reqwest::{Client, header};
 use scraper::{Html, Selector};
 use std::collections::HashMap;
+use unescape::unescape;
 
 mod form;
 mod variant;
@@ -324,7 +326,7 @@ impl Device {
             .collect_variables_from_response_mitra_wifi6(
                 &index_login_get_uri,
                 index_login_get_response,
-            )
+            )?
             .single_or_default();
 
         let login_password = format!(
@@ -391,12 +393,14 @@ impl Device {
             .text_with_charset("utf-8")
             .await?;
 
-        dbg!(&index_info_get_response);
+        // dbg!(&index_info_get_response);
 
-        let vars = self.collect_variables_from_response_mitra_wifi6(
-            "/cgi-bin/sophia_info.cgi",
-            index_info_get_response,
-        );
+        let vars = self
+            .collect_variables_from_response_mitra_wifi6(
+                "/cgi-bin/sophia_info.cgi",
+                index_info_get_response,
+            )?
+            .multiple_or_default();
 
         dbg!(&vars);
 
@@ -414,7 +418,7 @@ impl Device {
         &self,
         uri: &str,
         response: String,
-    ) -> Variant<String, HashMap<String, String>> {
+    ) -> Result<Variant<String, HashMap<String, String>>, Box<dyn std::error::Error>> {
         match uri {
             "/cgi-bin/login.cgi" => {
                 let fetch_pattern =
@@ -425,38 +429,128 @@ impl Device {
                     .and_then(|capture| capture.get(1).map(|m| m.as_str().to_string()))
                     .unwrap_or_default();
 
-                Variant::Single(capture)
+                Ok(Variant::Single(capture))
             }
             "/cgi-bin/sophia_info.cgi" => {
-                let document = Html::parse_fragment(&*response);
-                let td_selector = Selector::parse("td").unwrap();
+                // fn is_likely_key(text: &str) -> bool {
+                //     text.ends_with(':')
+                //         || [
+                //             "GPON", "SSID", "PPP", "LAN1", "LAN2", "LAN3", "LAN4", "Wi-Fi",
+                //         ]
+                //         .contains(&text)
+                // }
+                //
+                // fn is_likely_value(text: &str) -> bool {
+                //     !text.ends_with(':') && !text.contains('<') && !text.is_empty()
+                // }
+                //
+                // let mut vars = HashMap::new();
+                //
+                // let document = Html::parse_document(&response);
+                // let key_selector = Selector::parse("strong, span")?;
+                // let value_selector = Selector::parse("div, span, li")?;
+                //
+                // let mut keys = Vec::new();
+                // let mut values = Vec::new();
+                //
+                // for element in document.select(&key_selector) {
+                //     if let Some(text) = element.text().next() {
+                //         let trimmed = text.trim();
+                //         if !trimmed.is_empty() && is_likely_key(trimmed) {
+                //             keys.push(trimmed.to_string());
+                //         }
+                //     }
+                // }
+                //
+                // for element in document.select(&value_selector) {
+                //     if let Some(text) = element.text().next() {
+                //         let trimmed = text.trim();
+                //         if !trimmed.is_empty() && is_likely_value(trimmed) {
+                //             values.push(trimmed.to_string());
+                //         }
+                //     }
+                // }
+                //
+                // for (key, value) in keys.into_iter().zip(values.into_iter()) {
+                //     vars.insert(key, value);
+                // }
 
                 let mut vars = HashMap::new();
-                let mut key = None;
 
-                for element in document.select(&td_selector) {
-                    let text = element
-                        .text()
-                        .collect::<Vec<_>>()
-                        .join("")
-                        .trim()
-                        .to_string();
+                let document = Html::parse_document(&response);
 
-                    if key.is_none() && text.ends_with(':') {
-                        key = Some(text.trim_end_matches(':').to_string());
-                    } else if let Some(k) = key.take() {
-                        let value = if k == "Endereço MAC da WAN" {
-                            text.replace(":", "") // Remove colons from MAC address
-                        } else {
-                            text
-                        };
-                        vars.insert(k, value);
+                let test = &document.html().to_string();
+
+                let unescaped = unescape(test).unwrap_or_default();
+                let decoded = decode_html_entities(&unescaped).to_string();
+
+                let document = Html::parse_document(&decoded);
+
+                dbg!(&document);
+
+                // Helper selectors
+                let span_selector = Selector::parse("span").unwrap();
+                let strong_selector = Selector::parse("strong").unwrap();
+                let div_selector = Selector::parse("div").unwrap();
+                let li_selector = Selector::parse("li").unwrap();
+
+                let spans: Vec<_> = document.select(&span_selector).collect();
+                let strongs: Vec<_> = document.select(&strong_selector).collect();
+                let divs: Vec<_> = document.select(&div_selector).collect();
+                let lis: Vec<_> = document.select(&li_selector).collect();
+
+                // Each (key, value) pair is extracted based on tag position (same as in reference document)
+                let pairs = [
+                    (spans.get(1), divs.get(3)),    // GPON -> Não Sincronizado
+                    (strongs.get(1), divs.get(4)),  // Potência Rx -> 0 dBm
+                    (strongs.get(2), divs.get(5)),  // Potência Tx -> 0 dBm
+                    (strongs.get(3), spans.get(4)), // PPP -> Não Conectado
+                    (spans.get(12), lis.get(6)),    // Endereço de IPv4 público -> 0.0.0.0
+                    (strongs.get(4), Some(&strongs.get(4).unwrap())), // SSID -> VIVOFIBRA-WIFI6-D8F0
+                    (spans.get(13), spans.get(14)),                   // Wi-Fi -> Ativado
+                    (strongs.get(5), divs.get(6)),                    // LAN1 -> Unknown
+                    (strongs.get(6), divs.get(7)),                    // LAN2 -> Unknown
+                    (strongs.get(7), divs.get(8)),                    // LAN3 -> Unknown
+                    (strongs.get(8), divs.get(9)),                    // LAN4 -> devenv
+                ];
+
+                for (key_opt, value_opt) in pairs {
+                    if let (Some(key), Some(value)) = (key_opt, value_opt) {
+                        let k = key.text().collect::<String>().trim().to_string();
+                        let v = value.text().collect::<String>().trim().to_string();
+                        vars.insert(k, v);
                     }
                 }
 
-                Variant::Multiple(vars)
+                // let document = Html::parse_fragment(&*response);
+                // let selector = Selector::parse("span").unwrap();
+                //
+                // let mut vars = HashMap::new();
+                // let mut key = None;
+                //
+                // for element in document.select(&selector) {
+                //     let text = element
+                //         .text()
+                //         .collect::<Vec<_>>()
+                //         .join("")
+                //         .trim()
+                //         .to_string();
+                //
+                //     if key.is_none() && text.ends_with(':') {
+                //         key = Some(text.trim_end_matches(':').to_string());
+                //     } else if let Some(k) = key.take() {
+                //         let value = if k == "Endereço MAC da WAN" {
+                //             text.replace(":", "") // Remove colons from MAC address
+                //         } else {
+                //             text
+                //         };
+                //         vars.insert(k, value);
+                //     }
+                // }
+
+                Ok(Variant::Multiple(vars))
             }
-            _ => Variant::None,
+            _ => Ok(Variant::None),
         }
     }
 

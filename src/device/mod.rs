@@ -12,7 +12,7 @@ pub struct Device {
     pub(crate) admin_password: String,
     pub(crate) sap_code: String,
     pub(crate) model: Model,
-    pub(crate) gpon_sn: String,
+    // pub(crate) gpon_sn: String,
     pub(crate) firmware_version: String,
     pub index_data: IndexData,
     pub meta_data: MetaData,
@@ -20,25 +20,25 @@ pub struct Device {
 
 impl Device {
     pub fn new(
-        ip_addr: &str,
+        // ip_addr: String,
         mac_address: &str,
         serial_number: &str,
         admin_password: &str,
         sap_code: &str,
-        gpon_sn: &str,
-        firmware_version: &str,
+        // gpon_sn: &str,
+        // firmware_version: &str,
     ) -> (Self, Client) {
         let client = Self::connect();
         let index_data = IndexData::default();
         let meta_data = MetaData::default();
-        let ip_address = String::from(ip_addr);
+        let ip_address = Self::ip_address(&sap_code);
         let mac_address = String::from(mac_address);
         let serial_number = String::from(serial_number);
         let admin_password = String::from(admin_password);
-        let model = Model::from_sap_code(sap_code).unwrap();
+        let firmware_version = Self::firmware(&sap_code);
+        let model = Model::from_sap_code(&sap_code).unwrap();
         let sap_code = String::from(sap_code);
-        let gpon_sn = String::from(gpon_sn);
-        let firmware_version = String::from(firmware_version);
+        // let gpon_sn = String::from(gpon_sn);
 
         (
             Device {
@@ -48,7 +48,7 @@ impl Device {
                 admin_password,
                 sap_code,
                 model,
-                gpon_sn,
+                // gpon_sn,
                 firmware_version,
                 index_data,
                 meta_data,
@@ -61,6 +61,38 @@ impl Device {
         let client = ClientBuilder::new().cookie_store(true).build().unwrap();
 
         client
+    }
+
+    fn ip_address(sap_code: &str) -> String {
+        match sap_code {
+            "0192-0432-1" => "192.168.25.1".to_string(),
+            _ => "192.168.15.1".to_string(),
+        }
+    }
+
+    fn firmware(sap_code: &str) -> String {
+        match sap_code {
+            "0192-0429-8" => "BR_SV_g000_R3505VWN1001_s42".to_string(),
+            "0192-0430-9" => "BR_SV_g000_R3505VWN1001_s42".to_string(),
+            "0192-0431-0" => "BR_g7.7_100VNZ0b41".to_string(),
+            "0192-0432-1" => "BR_g7.7_100VNZ0b41".to_string(),
+            "0192-0438-7" => "BR_SV_g000_R3507VWN1001_s42".to_string(),
+            "0192-0442-2" => "BR_g8.7_1.11WVK_0_b45".to_string(),
+            "0192-0446-6" => "BR_SV_g000_R3507VWN1001_s42".to_string(),
+            "0192-0449-9" => "BR_g8.7_1.11WVK_0_b45".to_string(),
+            "0192-0450-0" => "BR_g13.12_RTF_TEF001_V8.30_V020".to_string(),
+            "0192-0452-2" => "BR_g8.7_1.11WVK_0_b45".to_string(),
+            "0192-0453-3" => "BR_g8.7_1.11WVK_0_b45".to_string(),
+            "0192-0458-8" => "BR_g13.12_RTF_TEF001_V8.30_V020".to_string(),
+            "0192-0475-0" => "BR_g13.12_RTF_TEF001_V8.30_V020".to_string(),
+            "0192-0476-0" => "BR_g8.7_1.11WVK_0_b45".to_string(),
+            "0192-0477-0" => "BR_g8.7_1.11WVK_0_b45".to_string(),
+            "0192-0483-0" => "GL_g1.13_100XNT0b17_2".to_string(),
+            "0192-0484-0" => "BR_g1.16_RTF_TEF004_V2.52".to_string(),
+            "0192-0468-8" => "".to_string(),
+            "0192-0469-9" => "".to_string(),
+            _ => String::new(),
+        }
     }
 }
 

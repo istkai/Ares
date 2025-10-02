@@ -57,12 +57,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // dbg!(&device);
 
-    for status in meta_test(&device).iter() {
-        println!("[{}]: {}", status.0, status.1);
-    }
+    if meta_test(&device).is_empty() && index_test(&device).is_empty() {
+        println!("\nTests concluded with no errors.");
+    } else {
+        println!();
 
-    for status in index_test(&device).iter() {
-        println!("[{}]: {}", status.0, status.1);
+        for status in meta_test(&device).iter() {
+            println!("[{}]: {}", status.0, status.1);
+        }
+
+        for status in index_test(&device).iter() {
+            println!("[{}]: {}", status.0, status.1);
+        }
     }
 
     Ok(())

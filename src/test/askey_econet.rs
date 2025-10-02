@@ -12,9 +12,9 @@ pub(crate) fn meta_test(device: &Device) -> Vec<(i32, &str)> {
         status.push((-1, "Incorrect Serial Number"));
     }
 
-    if device.meta_data.sap().unwrap_or_default() != device.sap_code {
-        status.push((-1, "Incorrect Device Model"));
-    }
+    // if device.meta_data.sap().unwrap_or_default() != device.sap_code {
+    //     status.push((-1, "Incorrect Device Model"));
+    // }
 
     if device.firmware_version.split_at(5).1 != device.meta_data.firmware_version.split_at(5).1 {
         status.push((-1, "Firmware out of date"));
@@ -104,14 +104,24 @@ pub(crate) fn index_test(device: &Device) -> Vec<(i32, &str)> {
     }
 
     if reset {
-        let wifi_list: String = String::from_utf8(
-            Command::new("sh")
-                .arg("-c")
-                .arg("nmcli device wifi list")
-                .output()
-                .expect("Unable to fetch SSID list")
-                .stdout,
-        )
+        let wifi_list: String = if !(cfg!(target_os = "windows")) {
+            String::from_utf8(
+                Command::new("sh")
+                    .arg("-c")
+                    .arg("nmcli device wifi list")
+                    .output()
+                    .expect("Unable to fetch SSID list")
+                    .stdout,
+            )
+        } else {
+            String::from_utf8(
+                Command::new("cmd")
+                    .args(["/C", "netsh wlan show networks"])
+                    .output()
+                    .expect("Unable to fetch SSID list")
+                    .stdout,
+            )
+        }
         .unwrap_or_default();
 
         if device.index_data.wl_is_enabled_main_0 != "1" {

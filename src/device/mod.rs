@@ -84,13 +84,13 @@ impl Device {
             "0192-0452-2" => "BR_g8.7_1.11WVK_0_b45".to_string(),
             "0192-0453-3" => "BR_g8.7_1.11WVK_0_b45".to_string(),
             "0192-0458-8" => "BR_g13.12_RTF_TEF001_V8.30_V020".to_string(),
-            "0192-0475-0" => "BR_g13.12_RTF_TEF001_V8.30_V020".to_string(),
+            "0192-0475-0" => "BR_SG_g13.12_RTF_TEF001_V8.30_V020".to_string(),
             "0192-0476-0" => "BR_g8.7_1.11WVK_0_b45".to_string(),
             "0192-0477-0" => "BR_g8.7_1.11WVK_0_b45".to_string(),
             "0192-0483-0" => "GL_g1.13_100XNT0b17_2".to_string(),
             "0192-0484-0" => "BR_g1.16_RTF_TEF004_V2.52".to_string(),
-            "0192-0468-8" => "".to_string(),
-            "0192-0469-9" => "".to_string(),
+            "0192-0468-8" => "BR_SF_g000_R3505VWN1001_s40".to_string(),
+            "0192-0469-9" => "BR_SF_g12.6_RTF_TEF001_V7.20.S38_V018".to_string(),
             _ => String::new(),
         }
     }

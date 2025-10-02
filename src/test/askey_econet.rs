@@ -104,36 +104,65 @@ pub(crate) fn index_test(device: &Device) -> Vec<(i32, &str)> {
     }
 
     if reset {
-        let wifi_list: String = if !(cfg!(target_os = "windows")) {
-            String::from_utf8(
-                Command::new("sh")
-                    .arg("-c")
-                    .arg("nmcli device wifi list")
-                    .output()
-                    .expect("Unable to fetch SSID list")
-                    .stdout,
-            )
+        if !(cfg!(target_os = "windows")) {
+            let _cmd_unix_refresh = Command::new("sh")
+                .arg("-c")
+                .arg("nmcli")
+                .arg("device")
+                .arg("wifi")
+                .arg("rescan")
+                .spawn();
+                
+            let cmd_unix = Command::new("sh")
+                .arg("-c")
+                .arg("nmcli")
+                .arg("device")
+                .arg("wifi")
+                .arg("list")
+                .output()
+                .expect("Unable to fetch SSID list")
+                .stdout;
+
+            let wifi_list = String::from_utf8(cmd_unix).unwrap_or_default();
+
+            if device.index_data.wl_is_enabled_main_0 != "1" {
+                status.push((60, "WLAN 2.4 GHz not functional"));
+            } else if !wifi_list.contains(&device.index_data.wl_ssid_main_0) {
+                status.push((60, "WLAN 2.4 GHz not functional"));
+            }
+    
+            if device.index_data.wl_is_enabled_main_1 != "1" {
+                status.push((60, "WLAN 5 GHz not functional"));
+            } else if !wifi_list.contains(&device.index_data.wl_ssid_main_1) {
+                status.push((60, "WLAN 5 GHz not functional"));
+            }
         } else {
-            String::from_utf8(
-                Command::new("cmd")
-                    .args(["/C", "netsh wlan show networks"])
-                    .output()
-                    .expect("Unable to fetch SSID list")
-                    .stdout,
-            )
-        }
-        .unwrap_or_default();
+            let _cmd_win_refresh = Command::new("explorer.exe")
+                .arg("ms-availablenetworks:")
+                .spawn()
+                .expect("Failed to refresh WiFi list");
+                
+            let cmd_win = Command::new("netsh")
+                .arg("wlan")
+                .arg("show")
+                .arg("networks")
+                .output()
+                .expect("Unable to fetch SSID list")
+                .stdout;
 
-        if device.index_data.wl_is_enabled_main_0 != "1" {
-            status.push((60, "WLAN 2.4 GHz not functional"));
-        } else if !wifi_list.contains(&device.index_data.wl_ssid_main_0) {
-            status.push((60, "WLAN 2.4 GHz not functional"));
-        }
+            let wifi_list = String::from_utf8_lossy(&cmd_win);
 
-        if device.index_data.wl_is_enabled_main_1 != "1" {
-            status.push((60, "WLAN 5 GHz not functional"));
-        } else if !wifi_list.contains(&device.index_data.wl_ssid_main_1) {
-            status.push((60, "WLAN 5 GHz not functional"));
+            if device.index_data.wl_is_enabled_main_0 != "1" {
+                status.push((60, "WLAN 2.4 GHz not functional"));
+            } else if !wifi_list.contains(&device.index_data.wl_ssid_main_0) {
+                status.push((60, "WLAN 2.4 GHz not functional"));
+            }
+    
+            if device.index_data.wl_is_enabled_main_1 != "1" {
+                status.push((60, "WLAN 5 GHz not functional"));
+            } else if !wifi_list.contains(&device.index_data.wl_ssid_main_1) {
+                status.push((60, "WLAN 5 GHz not functional"));
+            }
         }
     }
 

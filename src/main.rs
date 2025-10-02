@@ -55,8 +55,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .fetch_meta_data(&client)
         .await?;
 
-    // dbg!(&device);
-
     if meta_test(&device).is_empty() && index_test(&device).is_empty() {
         println!("\nTests concluded with no errors.");
     } else {

@@ -1,5 +1,5 @@
 use crate::device::{Device, Model};
-use std::process::Command;
+use std::{thread, process::Command, time::Duration};
 
 pub(crate) fn meta_test(device: &Device) -> Vec<(i32, &str)> {
     let mut status: Vec<(i32, &str)> = Vec::with_capacity(5);
@@ -112,6 +112,8 @@ pub(crate) fn index_test(device: &Device) -> Vec<(i32, &str)> {
                 .arg("wifi")
                 .arg("rescan")
                 .spawn();
+
+            //thread::sleep(Duration::from_secs(3));
                 
             let cmd_unix = Command::new("sh")
                 .arg("-c")
@@ -119,6 +121,9 @@ pub(crate) fn index_test(device: &Device) -> Vec<(i32, &str)> {
                 .arg("device")
                 .arg("wifi")
                 .arg("list")
+                .arg("|")
+                .arg("findstr")
+                .arg(&device.index_data.wl_ssid_main_0)
                 .output()
                 .expect("Unable to fetch SSID list")
                 .stdout;
@@ -141,6 +146,8 @@ pub(crate) fn index_test(device: &Device) -> Vec<(i32, &str)> {
                 .arg("ms-availablenetworks:")
                 .spawn()
                 .expect("Failed to refresh WiFi list");
+
+            thread::sleep(Duration::from_secs(3));
                 
             let cmd_win = Command::new("netsh")
                 .arg("wlan")

@@ -60,8 +60,8 @@
 
     <Product
         Id='*'
-        Name='ares'
-        UpgradeCode='2058208A-CB8B-4F59-BDBF-BDF8985F5677'
+        Name='Ares'
+        UpgradeCode='550F2C3C-2A3D-4E95-9406-2F43D94F5C73'
         Manufacturer='Caíque Benevidio'
         Language='1033'
         Codepage='1252'
@@ -69,6 +69,7 @@
 
         <Package Id='*'
             Keywords='Installer'
+            Description='Automated Resource Evaluation System'
             Manufacturer='Caíque Benevidio'
             InstallerVersion='450'
             Languages='1033'
@@ -82,11 +83,11 @@
             DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
 
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
-        <Property Id='DiskPrompt' Value='ares Installation'/>
+        <Property Id='DiskPrompt' Value='Ares Installation'/>
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
-                <Directory Id='APPLICATIONFOLDER' Name='ares'>
+                <Directory Id='APPLICATIONFOLDER' Name='Ares'>
                     
                     <!--
                       Enabling the license sidecar file in the installer is a four step process:
@@ -109,7 +110,7 @@
                     -->
 
                     <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='06504371-2471-4C6E-873C-D2025D809787' KeyPath='yes'>
+                        <Component Id='Path' Guid='2D089B0F-3F4C-41FD-9E78-0D2D604D343E' KeyPath='yes'>
                             <Environment
                                 Id='PATH'
                                 Name='PATH'

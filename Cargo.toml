@@ -3,6 +3,7 @@ name = "ares"
 version = "0.2.0"
 edition = "2024"
 authors = ["Caíque Benevidio <caique.benevidio@icloud.com>"]
+description = "Automated Resource Evaluation System"
 
 [dependencies]
 tokio = { version = "1.44.1", features = ["full"] }
